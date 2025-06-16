@@ -1,0 +1,1055 @@
+basePath: /
+definitions:
+  models.AddMemberToGroupRequest:
+    properties:
+      user_id:
+        type: string
+    type: object
+  models.CreateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      group_id:
+        type: string
+      notes:
+        type: string
+      split_type:
+        type: string
+      splits:
+        items:
+          $ref: '#/definitions/models.ExpenseSplitRequest'
+        type: array
+    type: object
+  models.CreateGroupRequest:
+    properties:
+      currency:
+        type: string
+      description:
+        type: string
+      member_ids:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+    type: object
+  models.ExpenseSplitRequest:
+    properties:
+      amount:
+        type: number
+      user_id:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.NoteRequest:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    type: object
+  models.RefreshRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  models.RespondFriendRequestRequest:
+    properties:
+      accept:
+        type: boolean
+    type: object
+  models.Response:
+    properties:
+      data:
+        additionalProperties: {}
+        type: object
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.SendFriendRequestRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  models.SettleDebtRequest:
+    properties:
+      notes:
+        type: string
+    type: object
+  models.UpdateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      description:
+        type: string
+      notes:
+        type: string
+      split_type:
+        type: string
+      splits:
+        items:
+          $ref: '#/definitions/models.ExpenseSplitRequest'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: ebubekiryigit6@gmail.com
+    name: Ebubekir Yiğit
+    url: https://github.com/ebubekiryigit
+  description: GoLang - Gin - RESTful - MongoDB - Redis
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://swagger.io/terms/
+  title: GoLang Rest API Starter Doc
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: login a user
+      parameters:
+      - description: Login Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: refreshes a user token
+      parameters:
+      - description: Refresh Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Refresh
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: registers a user
+      parameters:
+      - description: Register Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Register
+      tags:
+      - auth
+  /expenses:
+    get:
+      consumes:
+      - application/json
+      description: gets all expenses for the authenticated user with pagination
+      parameters:
+      - description: Switch page by 'page'
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Expenses
+      tags:
+      - expenses
+    post:
+      consumes:
+      - application/json
+      description: creates a new expense in a group
+      parameters:
+      - description: Expense Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Expense
+      tags:
+      - expenses
+  /expenses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: deletes expense by id
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Expense
+      tags:
+      - expenses
+    get:
+      consumes:
+      - application/json
+      description: get expense by id
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Expense
+      tags:
+      - expenses
+    put:
+      consumes:
+      - application/json
+      description: updates an expense by id
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Expense Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Expense
+      tags:
+      - expenses
+  /friends:
+    get:
+      consumes:
+      - application/json
+      description: gets all friends of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Friends
+      tags:
+      - friends
+  /friends/{friendId}:
+    delete:
+      consumes:
+      - application/json
+      description: removes a friend from the user's friend list
+      parameters:
+      - description: Friend ID
+        in: path
+        name: friendId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Remove Friend
+      tags:
+      - friends
+  /friends/block/{userId}:
+    post:
+      consumes:
+      - application/json
+      description: blocks a user
+      parameters:
+      - description: User ID to block
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Block User
+      tags:
+      - friends
+  /friends/request:
+    post:
+      consumes:
+      - application/json
+      description: sends a friend request to another user by email
+      parameters:
+      - description: Friend Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendFriendRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Send Friend Request
+      tags:
+      - friends
+  /friends/request/{id}/respond:
+    post:
+      consumes:
+      - application/json
+      description: accepts or rejects a friend request
+      parameters:
+      - description: Friendship ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Response Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.RespondFriendRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Respond to Friend Request
+      tags:
+      - friends
+  /friends/requests/received:
+    get:
+      consumes:
+      - application/json
+      description: gets all pending friend requests received by the authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Pending Friend Requests
+      tags:
+      - friends
+  /friends/requests/sent:
+    get:
+      consumes:
+      - application/json
+      description: gets all pending friend requests sent by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Sent Friend Requests
+      tags:
+      - friends
+  /groups:
+    get:
+      consumes:
+      - application/json
+      description: gets user groups with pagination
+      parameters:
+      - description: Switch page by 'page'
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Groups
+      tags:
+      - groups
+    post:
+      consumes:
+      - application/json
+      description: creates a new group for expense sharing
+      parameters:
+      - description: Group Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Group
+      tags:
+      - groups
+  /groups/{groupId}/balances:
+    get:
+      consumes:
+      - application/json
+      description: gets balance summary for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Balances
+      tags:
+      - settlements
+  /groups/{groupId}/expenses:
+    get:
+      consumes:
+      - application/json
+      description: gets expenses for a specific group with pagination
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: Switch page by 'page'
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Expenses
+      tags:
+      - expenses
+  /groups/{groupId}/settlements:
+    get:
+      consumes:
+      - application/json
+      description: gets all settlements for a specific group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Settlements
+      tags:
+      - settlements
+  /groups/{groupId}/simplify:
+    get:
+      consumes:
+      - application/json
+      description: calculates simplified settlement suggestions for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Simplify Group Debts
+      tags:
+      - settlements
+  /groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: deletes a group (soft delete)
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Group
+      tags:
+      - groups
+    get:
+      consumes:
+      - application/json
+      description: get group by id
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group
+      tags:
+      - groups
+  /groups/{id}/members:
+    get:
+      consumes:
+      - application/json
+      description: gets all members of a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Members
+      tags:
+      - groups
+    post:
+      consumes:
+      - application/json
+      description: adds a member to a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Member Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddMemberToGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Add Member to Group
+      tags:
+      - groups
+  /groups/{id}/members/{memberId}:
+    delete:
+      consumes:
+      - application/json
+      description: removes a member from a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member ID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Remove Member from Group
+      tags:
+      - groups
+  /notes:
+    get:
+      consumes:
+      - application/json
+      description: gets user notes with pagination
+      parameters:
+      - description: Switch page by 'page'
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Notes
+      tags:
+      - notes
+    post:
+      consumes:
+      - application/json
+      description: creates a new note
+      parameters:
+      - description: Note Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.NoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Note
+      tags:
+      - notes
+  /notes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: deletes note by id
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a note
+      tags:
+      - notes
+    get:
+      consumes:
+      - application/json
+      description: get note by id
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a note
+      tags:
+      - notes
+    put:
+      consumes:
+      - application/json
+      description: updates a note by id
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Note Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.NoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a note
+      tags:
+      - notes
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: check server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Ping
+      tags:
+      - ping
+  /settlements:
+    get:
+      consumes:
+      - application/json
+      description: gets all settlements for the authenticated user
+      parameters:
+      - description: Filter by status (pending, completed, cancelled)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Settlements
+      tags:
+      - settlements
+  /settlements/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: marks a settlement as completed
+      parameters:
+      - description: Settlement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Settlement Request
+        in: body
+        name: req
+        schema:
+          $ref: '#/definitions/models.SettleDebtRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark Settlement Complete
+      tags:
+      - settlements
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Bearer-Token
+    type: apiKey
+swagger: "2.0"
