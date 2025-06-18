@@ -16,7 +16,8 @@ import (
 type BalanceInfo struct {
 	UserID   primitive.ObjectID `json:"user_id"`
 	UserName string             `json:"user_name"`
-	Amount   float64            `json:"amount"` // Positive means they owe you, negative means you owe them
+	Amount   float64            `json:"amount"`   // Positive means they owe money, negative means they are owed money
+	Currency string             `json:"currency"` // Added currency field
 }
 
 // SettlementSuggestion represents a settlement suggestion with populated user data
@@ -81,28 +82,26 @@ func CalculateGroupBalances(groupID, userID primitive.ObjectID) (*GroupBalance, 
 		userMap[user.ID] = user
 	}
 
-	// Convert to balance info relative to the requesting user
+	// Convert to balance info for ALL group members
 	var balances []BalanceInfo
 
-	for memberID, balance := range balanceMap {
-		if memberID == userID {
-			continue // Skip self
-		}
-
+	// Process ALL group members (including the requesting user)
+	for _, memberID := range group.Members {
 		user := userMap[memberID]
 		if user == nil {
 			continue
 		}
 
-		// Balance represents net amount:
-		// Positive = they owe you money, Negative = you owe them money
-		if balance != 0 {
-			balances = append(balances, BalanceInfo{
-				UserID:   memberID,
-				UserName: user.Name,
-				Amount:   -balance, // Negate to show from your perspective
-			})
-		}
+		// Get balance for this member (0 if no expenses)
+		balance := balanceMap[memberID]
+
+		// Include ALL members, even with zero balance
+		balances = append(balances, BalanceInfo{
+			UserID:   memberID,
+			UserName: user.Name,
+			Amount:   balance,
+			Currency: group.Currency, // Add currency field
+		})
 	}
 
 	return &GroupBalance{
@@ -249,6 +248,7 @@ func SimplifyDebts(groupID, userID primitive.ObjectID) ([]SettlementSuggestion, 
 	}
 
 	// Simplify debts using a greedy algorithm
+	// Sign convention: Positive balance = owes money, Negative balance = is owed money
 	var settlements []SettlementSuggestion
 
 	// Get all users for name lookup
@@ -272,34 +272,34 @@ func SimplifyDebts(groupID, userID primitive.ObjectID) ([]SettlementSuggestion, 
 	}
 
 	for {
-		// Find the person who owes the most (most negative balance)
+		// Find the person who owes the most (most positive balance)
 		var maxDebtorID primitive.ObjectID
 		maxDebt := 0.0
 
-		// Find the person who is owed the most (most positive balance)
+		// Find the person who is owed the most (most negative balance)
 		var maxCreditorID primitive.ObjectID
 		maxCredit := 0.0
 
 		for userID, balance := range netBalances {
-			if balance < maxDebt {
+			if balance > maxDebt {
 				maxDebt = balance
-				maxDebtorID = userID
+				maxDebtorID = userID // Most positive = owes most money
 			}
-			if balance > maxCredit {
+			if balance < maxCredit {
 				maxCredit = balance
-				maxCreditorID = userID
+				maxCreditorID = userID // Most negative = is owed most money
 			}
 		}
 
 		// If no significant debt remains, break
-		if maxDebt >= -0.01 && maxCredit <= 0.01 {
+		if maxDebt <= 0.01 && maxCredit >= -0.01 {
 			break
 		}
 
 		// Calculate settlement amount
-		settlementAmount := maxCredit
-		if -maxDebt < maxCredit {
-			settlementAmount = -maxDebt
+		settlementAmount := maxDebt
+		if -maxCredit < maxDebt {
+			settlementAmount = -maxCredit
 		}
 
 		if settlementAmount > 0.01 {
@@ -329,8 +329,8 @@ func SimplifyDebts(groupID, userID primitive.ObjectID) ([]SettlementSuggestion, 
 			settlements = append(settlements, settlement)
 
 			// Update balances
-			netBalances[maxDebtorID] += settlementAmount
-			netBalances[maxCreditorID] -= settlementAmount
+			netBalances[maxDebtorID] -= settlementAmount
+			netBalances[maxCreditorID] += settlementAmount
 		} else {
 			break
 		}
