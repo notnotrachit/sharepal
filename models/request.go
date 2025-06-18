@@ -154,6 +154,25 @@ func (r RespondFriendRequestRequest) Validate() error {
 }
 
 // Settlement related requests
+type CreateSettlementRequest struct {
+	GroupID  string  `json:"group_id"`
+	PayerID  string  `json:"payer_id"`
+	PayeeID  string  `json:"payee_id"`
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
+	Notes    string  `json:"notes,omitempty"`
+}
+
+func (r CreateSettlementRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.GroupID, validation.Required),
+		validation.Field(&r.PayerID, validation.Required),
+		validation.Field(&r.PayeeID, validation.Required),
+		validation.Field(&r.Amount, validation.Required, validation.Min(0.01)),
+		validation.Field(&r.Currency, validation.Required, validation.Length(3, 3)),
+	)
+}
+
 type SettleDebtRequest struct {
 	Notes string `json:"notes,omitempty"`
 }

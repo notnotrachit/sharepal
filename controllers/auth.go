@@ -1,14 +1,16 @@
 package controllers
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models"
 	db "github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models/db"
 	"github.com/ebubekiryigit/golang-mongodb-rest-api-starter/services"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"strings"
 )
 
 // Register godoc
@@ -171,5 +173,41 @@ func Refresh(c *gin.Context) {
 			"access":  accessToken.GetResponseJson(),
 			"refresh": refreshToken.GetResponseJson()},
 	}
+	response.SendResponse(c)
+}
+
+// GetMe godoc
+// @Summary      Get Current User
+// @Description  get current logged in user information
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  models.Response
+// @Failure      400  {object}  models.Response
+// @Router       /user/me [get]
+// @Security     ApiKeyAuth
+func GetMe(c *gin.Context) {
+	response := &models.Response{
+		StatusCode: http.StatusBadRequest,
+		Success:    false,
+	}
+
+	userId, exists := c.Get("userId")
+	if !exists {
+		response.Message = "cannot get user"
+		response.SendResponse(c)
+		return
+	}
+
+	user, err := services.FindUserById(userId.(primitive.ObjectID))
+	if err != nil {
+		response.Message = err.Error()
+		response.SendResponse(c)
+		return
+	}
+
+	response.StatusCode = http.StatusOK
+	response.Success = true
+	response.Data = gin.H{"user": user}
 	response.SendResponse(c)
 }

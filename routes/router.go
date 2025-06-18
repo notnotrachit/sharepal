@@ -24,6 +24,7 @@ func New() *gin.Engine {
 	{
 		PingRoute(v1)
 		AuthRoute(v1)
+		UserRoute(v1, middlewares.JWTMiddleware())
 		NoteRoute(v1, middlewares.JWTMiddleware())
 
 		// Splitwise features

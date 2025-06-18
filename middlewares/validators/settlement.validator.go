@@ -8,6 +8,20 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+func CreateSettlementValidator() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var createSettlementRequest models.CreateSettlementRequest
+		_ = c.ShouldBindBodyWith(&createSettlementRequest, binding.JSON)
+
+		if err := createSettlementRequest.Validate(); err != nil {
+			models.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func SettleDebtValidator() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var settleDebtRequest models.SettleDebtRequest

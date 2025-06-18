@@ -101,6 +101,75 @@ func SimplifyDebts(c *gin.Context) {
 	response.SendResponse(c)
 }
 
+// CreateSettlement godoc
+// @Summary      Create Settlement
+// @Description  creates a custom settlement between two users
+// @Tags         settlements
+// @Accept       json
+// @Produce      json
+// @Param        req  body      models.CreateSettlementRequest true "Settlement Request"
+// @Success      201  {object}  models.Response
+// @Failure      400  {object}  models.Response
+// @Router       /settlements [post]
+// @Security     ApiKeyAuth
+func CreateSettlement(c *gin.Context) {
+	var requestBody models.CreateSettlementRequest
+	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
+
+	response := &models.Response{
+		StatusCode: http.StatusBadRequest,
+		Success:    false,
+	}
+
+	userId, exists := c.Get("userId")
+	if !exists {
+		response.Message = "cannot get user"
+		response.SendResponse(c)
+		return
+	}
+
+	groupId, err := primitive.ObjectIDFromHex(requestBody.GroupID)
+	if err != nil {
+		response.Message = "invalid group id"
+		response.SendResponse(c)
+		return
+	}
+
+	payerId, err := primitive.ObjectIDFromHex(requestBody.PayerID)
+	if err != nil {
+		response.Message = "invalid payer id"
+		response.SendResponse(c)
+		return
+	}
+
+	payeeId, err := primitive.ObjectIDFromHex(requestBody.PayeeID)
+	if err != nil {
+		response.Message = "invalid payee id"
+		response.SendResponse(c)
+		return
+	}
+
+	// Only allow group members to create settlements
+	_, err = services.GetGroupById(groupId, userId.(primitive.ObjectID))
+	if err != nil {
+		response.Message = "access denied or group not found"
+		response.SendResponse(c)
+		return
+	}
+
+	settlement, err := services.CreateSettlement(groupId, payerId, payeeId, requestBody.Amount, requestBody.Currency, requestBody.Notes)
+	if err != nil {
+		response.Message = err.Error()
+		response.SendResponse(c)
+		return
+	}
+
+	response.StatusCode = http.StatusCreated
+	response.Success = true
+	response.Data = gin.H{"settlement": settlement}
+	response.SendResponse(c)
+}
+
 // MarkSettlementComplete godoc
 // @Summary      Mark Settlement Complete
 // @Description  marks a settlement as completed

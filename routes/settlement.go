@@ -15,6 +15,12 @@ func SettlementRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 		)
 
 		settlements.POST(
+			"",
+			validators.CreateSettlementValidator(),
+			controllers.CreateSettlement,
+		)
+
+		settlements.POST(
 			"/:id/complete",
 			validators.PathIdValidator(),
 			validators.SettleDebtValidator(),

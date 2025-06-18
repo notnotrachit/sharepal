@@ -19,6 +19,18 @@ type BalanceInfo struct {
 	Amount   float64            `json:"amount"` // Positive means they owe you, negative means you owe them
 }
 
+// SettlementSuggestion represents a settlement suggestion with populated user data
+type SettlementSuggestion struct {
+	GroupID   primitive.ObjectID `json:"group_id"`
+	PayerID   primitive.ObjectID `json:"payer_id"`
+	PayerName string             `json:"payer_name"`
+	PayeeID   primitive.ObjectID `json:"payee_id"`
+	PayeeName string             `json:"payee_name"`
+	Amount    float64            `json:"amount"`
+	Currency  string             `json:"currency"`
+	Status    string             `json:"status"`
+}
+
 // GroupBalance represents the overall balance summary for a group
 type GroupBalance struct {
 	GroupID   primitive.ObjectID `json:"group_id"`
@@ -71,7 +83,6 @@ func CalculateGroupBalances(groupID, userID primitive.ObjectID) (*GroupBalance, 
 
 	// Convert to balance info relative to the requesting user
 	var balances []BalanceInfo
-	userBalance := balanceMap[userID]
 
 	for memberID, balance := range balanceMap {
 		if memberID == userID {
@@ -83,14 +94,13 @@ func CalculateGroupBalances(groupID, userID primitive.ObjectID) (*GroupBalance, 
 			continue
 		}
 
-		// Calculate relative balance (positive means they owe you, negative means you owe them)
-		relativeBalance := balance - userBalance
-
-		if relativeBalance != 0 {
+		// Balance represents net amount:
+		// Positive = they owe you money, Negative = you owe them money
+		if balance != 0 {
 			balances = append(balances, BalanceInfo{
 				UserID:   memberID,
 				UserName: user.Name,
-				Amount:   relativeBalance,
+				Amount:   -balance, // Negate to show from your perspective
 			})
 		}
 	}
@@ -197,7 +207,7 @@ func GetGroupSettlements(groupID, userID primitive.ObjectID) ([]*db.Settlement, 
 	return settlements, err
 }
 
-func SimplifyDebts(groupID, userID primitive.ObjectID) ([]db.Settlement, error) {
+func SimplifyDebts(groupID, userID primitive.ObjectID) ([]SettlementSuggestion, error) {
 	// Get group balances
 	groupBalance, err := CalculateGroupBalances(groupID, userID)
 	if err != nil {
@@ -239,7 +249,27 @@ func SimplifyDebts(groupID, userID primitive.ObjectID) ([]db.Settlement, error) 
 	}
 
 	// Simplify debts using a greedy algorithm
-	var settlements []db.Settlement
+	var settlements []SettlementSuggestion
+
+	// Get all users for name lookup
+	var allUsers []*db.User
+	userIDs := make([]primitive.ObjectID, 0, len(netBalances))
+	for userID := range netBalances {
+		userIDs = append(userIDs, userID)
+	}
+
+	err = mgm.Coll(&db.User{}).SimpleFind(&allUsers, bson.M{
+		"_id": bson.M{"$in": userIDs},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create user lookup map
+	userLookup := make(map[primitive.ObjectID]*db.User)
+	for _, user := range allUsers {
+		userLookup[user.ID] = user
+	}
 
 	for {
 		// Find the person who owes the most (most negative balance)
@@ -273,15 +303,28 @@ func SimplifyDebts(groupID, userID primitive.ObjectID) ([]db.Settlement, error) 
 		}
 
 		if settlementAmount > 0.01 {
-			// Create settlement suggestion
+			// Create settlement suggestion with populated user data
 			group, _ := GetGroupById(groupID, userID)
-			settlement := db.Settlement{
-				GroupID:  groupID,
-				PayerID:  maxDebtorID,
-				PayeeID:  maxCreditorID,
-				Amount:   settlementAmount,
-				Currency: group.Currency,
-				Status:   db.SettlementPending,
+
+			payerName := "Unknown User"
+			payeeName := "Unknown User"
+
+			if payer, exists := userLookup[maxDebtorID]; exists {
+				payerName = payer.Name
+			}
+			if payee, exists := userLookup[maxCreditorID]; exists {
+				payeeName = payee.Name
+			}
+
+			settlement := SettlementSuggestion{
+				GroupID:   groupID,
+				PayerID:   maxDebtorID,
+				PayerName: payerName,
+				PayeeID:   maxCreditorID,
+				PayeeName: payeeName,
+				Amount:    settlementAmount,
+				Currency:  group.Currency,
+				Status:    string(db.SettlementPending),
 			}
 			settlements = append(settlements, settlement)
 
