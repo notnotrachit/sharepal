@@ -59,23 +59,7 @@ func GroupRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 			controllers.GetGroupExpenses,
 		)
 
-		// Balances and settlements
-		groups.GET(
-			"/:id/balances",
-			validators.PathIdValidator(),
-			controllers.GetGroupBalances,
-		)
-
-		groups.GET(
-			"/:id/simplify",
-			validators.PathIdValidator(),
-			controllers.SimplifyDebts,
-		)
-
-		groups.GET(
-			"/:id/settlements",
-			validators.PathIdValidator(),
-			controllers.GetGroupSettlements,
-		)
+		// Note: Balances and settlement routes moved to transaction routes
+		// for the new unified transaction-based architecture
 	}
 }

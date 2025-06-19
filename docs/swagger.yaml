@@ -5,6 +5,22 @@ definitions:
       user_id:
         type: string
     type: object
+  models.BulkSettlementsRequest:
+    properties:
+      settlements:
+        items:
+          $ref: '#/definitions/models.CreateSettlementRequest'
+        type: array
+    type: object
+  models.CompleteTransactionRequest:
+    properties:
+      notes:
+        type: string
+      proof_of_payment:
+        type: string
+      settlement_method:
+        type: string
+    type: object
   models.CreateExpenseRequest:
     properties:
       amount:
@@ -37,6 +53,21 @@ definitions:
           type: string
         type: array
       name:
+        type: string
+    type: object
+  models.CreateSettlementRequest:
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+      group_id:
+        type: string
+      notes:
+        type: string
+      payee_id:
+        type: string
+      payer_id:
         type: string
     type: object
   models.ExpenseSplitRequest:
@@ -578,11 +609,69 @@ paths:
       summary: Create Group
       tags:
       - groups
+  /groups/{groupId}/analytics:
+    get:
+      consumes:
+      - application/json
+      description: gets analytics data for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Analytics
+      tags:
+      - transactions
+  /groups/{groupId}/balance-history:
+    get:
+      consumes:
+      - application/json
+      description: gets balance change history for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: 'Number of days (default: 30)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Balance History
+      tags:
+      - transactions
   /groups/{groupId}/balances:
     get:
       consumes:
       - application/json
-      description: gets balance summary for a group
+      description: gets real-time balance summary for a group using maintained balances
       parameters:
       - description: Group ID
         in: path
@@ -604,7 +693,40 @@ paths:
       - ApiKeyAuth: []
       summary: Get Group Balances
       tags:
-      - settlements
+      - transactions
+  /groups/{groupId}/bulk-settlements:
+    post:
+      consumes:
+      - application/json
+      description: creates multiple settlements from suggested settlements
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: Bulk Settlements Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.BulkSettlementsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Bulk Settlements
+      tags:
+      - transactions
   /groups/{groupId}/expenses:
     get:
       consumes:
@@ -636,6 +758,33 @@ paths:
       summary: Get Group Expenses
       tags:
       - expenses
+  /groups/{groupId}/recalculate-balances:
+    post:
+      consumes:
+      - application/json
+      description: recalculates all balances for a group (admin operation)
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Recalculate Group Balances
+      tags:
+      - transactions
   /groups/{groupId}/settlements:
     get:
       consumes:
@@ -667,7 +816,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: calculates simplified settlement suggestions for a group
+      description: calculates simplified settlement suggestions using maintained balances
       parameters:
       - description: Group ID
         in: path
@@ -689,7 +838,116 @@ paths:
       - ApiKeyAuth: []
       summary: Simplify Group Debts
       tags:
-      - settlements
+      - transactions
+  /groups/{groupId}/transactions:
+    get:
+      consumes:
+      - application/json
+      description: gets all transactions for a specific group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: Filter by transaction type (expense, settlement)
+        in: query
+        name: type
+        type: string
+      - description: 'Page number (default: 0)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Transactions
+      tags:
+      - transactions
+  /groups/{groupId}/transactions/expenses:
+    get:
+      consumes:
+      - application/json
+      description: gets all expense transactions for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: 'Page number (default: 0)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Expense Transactions
+      tags:
+      - transactions
+  /groups/{groupId}/transactions/settlements:
+    get:
+      consumes:
+      - application/json
+      description: gets all settlement transactions for a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: groupId
+        required: true
+        type: string
+      - description: 'Page number (default: 0)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Group Settlement Transactions
+      tags:
+      - transactions
   /groups/{id}:
     delete:
       consumes:
@@ -1013,6 +1271,33 @@ paths:
       summary: Get User Settlements
       tags:
       - settlements
+    post:
+      consumes:
+      - application/json
+      description: creates a custom settlement between two users
+      parameters:
+      - description: Settlement Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateSettlementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Settlement
+      tags:
+      - settlements
   /settlements/{id}/complete:
     post:
       consumes:
@@ -1045,6 +1330,276 @@ paths:
       summary: Mark Settlement Complete
       tags:
       - settlements
+  /transactions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: deletes a transaction
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Transaction
+      tags:
+      - transactions
+    get:
+      consumes:
+      - application/json
+      description: gets a single transaction by ID
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Transaction by ID
+      tags:
+      - transactions
+    put:
+      consumes:
+      - application/json
+      description: updates an expense transaction
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Transaction
+      tags:
+      - transactions
+  /transactions/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: marks a settlement transaction as completed
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Complete Transaction Request
+        in: body
+        name: req
+        schema:
+          $ref: '#/definitions/models.CompleteTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark Transaction Complete
+      tags:
+      - transactions
+  /transactions/expense:
+    post:
+      consumes:
+      - application/json
+      description: creates a new expense using the unified transaction model
+      parameters:
+      - description: Expense Request
+        in: body
+        name: expense
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Expense (New Transaction Model)
+      tags:
+      - transactions
+  /transactions/settlement:
+    post:
+      consumes:
+      - application/json
+      description: creates a settlement using the unified transaction model
+      parameters:
+      - description: Settlement Request
+        in: body
+        name: settlement
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateSettlementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Settlement (New Transaction Model)
+      tags:
+      - transactions
+  /user/me:
+    get:
+      consumes:
+      - application/json
+      description: get current logged in user information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Current User
+      tags:
+      - auth
+  /users/me/analytics:
+    get:
+      consumes:
+      - application/json
+      description: gets analytics data for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Analytics
+      tags:
+      - transactions
+  /users/me/balances:
+    get:
+      consumes:
+      - application/json
+      description: gets all group balances for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Balances
+      tags:
+      - transactions
+  /users/me/transactions:
+    get:
+      consumes:
+      - application/json
+      description: gets all transactions for the authenticated user across all groups
+      parameters:
+      - description: 'Page number (default: 0)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by transaction type
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Transactions
+      tags:
+      - transactions
 schemes:
 - http
 securityDefinitions:

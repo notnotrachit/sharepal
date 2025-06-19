@@ -180,3 +180,23 @@ type SettleDebtRequest struct {
 func (r SettleDebtRequest) Validate() error {
 	return validation.ValidateStruct(&r)
 }
+
+type CompleteTransactionRequest struct {
+	Notes            string `json:"notes,omitempty"`
+	SettlementMethod string `json:"settlement_method,omitempty"`
+	ProofOfPayment   string `json:"proof_of_payment,omitempty"`
+}
+
+func (r CompleteTransactionRequest) Validate() error {
+	return validation.ValidateStruct(&r)
+}
+
+type BulkSettlementsRequest struct {
+	Settlements []CreateSettlementRequest `json:"settlements"`
+}
+
+func (r BulkSettlementsRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Settlements, validation.Required, validation.Length(1, 50)),
+	)
+}

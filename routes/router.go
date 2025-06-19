@@ -31,7 +31,8 @@ func New() *gin.Engine {
 		GroupRoute(v1, middlewares.JWTMiddleware())
 		ExpenseRoute(v1, middlewares.JWTMiddleware())
 		FriendshipRoute(v1, middlewares.JWTMiddleware())
-		SettlementRoute(v1, middlewares.JWTMiddleware())
+		// SettlementRoute replaced by TransactionRoutes
+		TransactionRoutes(v1)
 	}
 
 	docs.SwaggerInfo.BasePath = v1.BasePath() // adds /v1 to swagger base path
