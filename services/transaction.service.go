@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -200,10 +201,37 @@ func (ts *TransactionService) executeTransactionWithBalanceUpdate(transaction *d
 			return err
 		}
 
-		// 2. Update balances for all participants
-		for _, participant := range transaction.Participants {
-			if err := ts.updateUserBalance(sc, transaction.GroupID, participant.UserID, participant.UserName, participant.Amount, transaction.Type, transaction.ID, group.Currency); err != nil {
-				return err
+		// 2. Update balances for expenses using payers and splits directly
+		if transaction.Type == db.TransactionTypeExpense {
+			// Update balances for payers (they paid money)
+			for _, payer := range transaction.Payers {
+				if err := ts.updateUserBalance(sc, transaction.GroupID, payer.UserID, payer.UserName, payer.Amount, 0, transaction.Type, transaction.ID, group.Currency); err != nil {
+					return err
+				}
+			}
+
+			// Update balances for splits (they owe money)
+			for _, split := range transaction.Splits {
+				if err := ts.updateUserBalance(sc, transaction.GroupID, split.UserID, split.UserName, 0, split.Amount, transaction.Type, transaction.ID, group.Currency); err != nil {
+					return err
+				}
+			}
+		} else {
+			// For settlements, handle payer and payee correctly
+			for _, participant := range transaction.Participants {
+				if participant.Amount > 0 {
+					// They paid money (payer) - increase their TotalPaid
+					if err := ts.updateUserBalance(sc, transaction.GroupID, participant.UserID, participant.UserName, participant.Amount, 0, transaction.Type, transaction.ID, group.Currency); err != nil {
+						return err
+					}
+				} else {
+					// They received money (payee) - increase their TotalOwed to effectively reduce their debt
+					// Convert negative amount to positive for received amount
+					receivedAmount := -participant.Amount
+					if err := ts.updateUserBalance(sc, transaction.GroupID, participant.UserID, participant.UserName, 0, receivedAmount, transaction.Type, transaction.ID, group.Currency); err != nil {
+						return err
+					}
+				}
 			}
 		}
 
@@ -215,7 +243,7 @@ func (ts *TransactionService) executeTransactionWithBalanceUpdate(transaction *d
 }
 
 // updateUserBalance updates a user's balance in a group atomically
-func (ts *TransactionService) updateUserBalance(sc mongo.SessionContext, groupID, userID primitive.ObjectID, userName string, amount float64, transactionType db.TransactionType, transactionID primitive.ObjectID, currency string) error {
+func (ts *TransactionService) updateUserBalance(sc mongo.SessionContext, groupID, userID primitive.ObjectID, userName string, amountPaid, amountOwed float64, transactionType db.TransactionType, transactionID primitive.ObjectID, currency string) error {
 	balance := &db.GroupBalance{}
 
 	// Try to find existing balance
@@ -234,30 +262,13 @@ func (ts *TransactionService) updateUserBalance(sc mongo.SessionContext, groupID
 		}
 	}
 
-	// Calculate balance changes based on transaction type and amount
-	var amountPaid, amountOwed float64
+	fmt.Printf("DEBUG: Updating balance for %s - Paid: %.2f, Owed: %.2f\n", userName, amountPaid, amountOwed)
 
-	switch transactionType {
-	case db.TransactionTypeExpense:
-		if amount > 0 {
-			// User paid money (positive amount means they paid)
-			amountPaid = amount
-		} else {
-			// User owes money (negative amount means they owe)
-			amountOwed = -amount
-		}
-	case db.TransactionTypeSettlement:
-		if amount > 0 {
-			// User is paying in settlement
-			amountPaid = amount
-		} else {
-			// User is receiving in settlement (reduces what they're owed)
-			amountOwed = amount // This will be negative, reducing total owed
-		}
-	}
-
-	// Update balance
+	// Update balance with the provided amounts
 	balance.UpdateBalance(amountPaid, amountOwed, transactionID)
+
+	fmt.Printf("DEBUG: After update - %s: Balance: %.2f (Paid: %.2f, Owed: %.2f)\n",
+		balance.UserName, balance.Balance, balance.TotalPaid, balance.TotalOwed)
 
 	// Upsert the balance record
 	opts := options.Replace().SetUpsert(true)
@@ -281,6 +292,53 @@ func (ts *TransactionService) GetGroupBalances(groupID, userID primitive.ObjectI
 	return balances, err
 }
 
+// logGroupTransactions logs all transactions for debugging purposes
+func (ts *TransactionService) logGroupTransactions(groupID primitive.ObjectID) {
+	var transactions []*db.Transaction
+	err := mgm.Coll(&db.Transaction{}).SimpleFind(&transactions, bson.M{
+		"group_id": groupID,
+	})
+
+	if err != nil {
+		fmt.Printf("DEBUG: Error fetching transactions: %v\n", err)
+		return
+	}
+
+	fmt.Printf("DEBUG: === TRANSACTIONS BREAKDOWN ===\n")
+	fmt.Printf("DEBUG: Found %d transactions for group\n", len(transactions))
+
+	for i, txn := range transactions {
+		fmt.Printf("DEBUG: Transaction %d:\n", i+1)
+		fmt.Printf("  Type: %s\n", txn.Type)
+		fmt.Printf("  Description: %s\n", txn.Description)
+		fmt.Printf("  Amount: %.2f %s\n", txn.Amount, txn.Currency)
+		fmt.Printf("  Date: %s\n", txn.Date.Format("2006-01-02 15:04"))
+
+		if txn.Type == db.TransactionTypeExpense {
+			fmt.Printf("  Payers:\n")
+			for _, payer := range txn.Payers {
+				fmt.Printf("    - %s paid %.2f\n", payer.UserName, payer.Amount)
+			}
+			fmt.Printf("  Splits:\n")
+			for _, split := range txn.Splits {
+				fmt.Printf("    - %s owes %.2f\n", split.UserName, split.Amount)
+			}
+		} else if txn.Type == db.TransactionTypeSettlement {
+			fmt.Printf("  Settlement:\n")
+			for _, participant := range txn.Participants {
+				if participant.Amount > 0 {
+					fmt.Printf("    - %s pays %.2f\n", participant.UserName, participant.Amount)
+				} else {
+					fmt.Printf("    - %s receives %.2f\n", participant.UserName, -participant.Amount)
+				}
+			}
+		}
+		fmt.Printf("  Completed: %t\n", txn.IsCompleted)
+		fmt.Printf("\n")
+	}
+	fmt.Printf("DEBUG: === END TRANSACTIONS ===\n")
+}
+
 // SimplifyDebtsFromBalances calculates optimal settlements from current balances
 func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitive.ObjectID) ([]models.SettlementSuggestion, error) {
 	balances, err := ts.GetGroupBalances(groupID, userID)
@@ -293,6 +351,16 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 		return []models.SettlementSuggestion{}, nil
 	}
 
+	// Debug: Log balances
+	fmt.Printf("DEBUG: Found %d balances\n", len(balances))
+	for _, balance := range balances {
+		fmt.Printf("DEBUG: User %s (%s) - Balance: %.2f (Paid: %.2f, Owed: %.2f)\n",
+			balance.UserName, balance.UserID.Hex(), balance.Balance, balance.TotalPaid, balance.TotalOwed)
+	}
+
+	// Debug: Log recent transactions to understand how we got these balances
+	ts.logGroupTransactions(groupID)
+
 	// Convert to map for simplification algorithm
 	netBalances := make(map[primitive.ObjectID]float64)
 	userLookup := make(map[primitive.ObjectID]string)
@@ -301,10 +369,13 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 	for _, balance := range balances {
 		netBalances[balance.UserID] = balance.Balance
 		userLookup[balance.UserID] = balance.UserName
+		fmt.Printf("DEBUG: Added to algorithm - %s: %.2f\n", balance.UserName, balance.Balance)
 	}
 
 	// Use the same simplification algorithm but with pre-calculated balances
 	var settlements []models.SettlementSuggestion
+
+	fmt.Printf("DEBUG: Starting simplification algorithm\n")
 
 	for {
 		var maxCreditorID, maxDebtorID primitive.ObjectID
@@ -321,9 +392,13 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 			}
 		}
 
+		fmt.Printf("DEBUG: Max creditor: %s (%.2f), Max debtor: %s (%.2f)\n",
+			userLookup[maxCreditorID], maxCredit, userLookup[maxDebtorID], maxDebt)
+
 		// maxCredit > 0 means user is owed money
 		// maxDebt < 0 means user owes money
 		if maxCredit <= 0.01 && maxDebt >= -0.01 {
+			fmt.Printf("DEBUG: Breaking - maxCredit: %.2f, maxDebt: %.2f\n", maxCredit, maxDebt)
 			break
 		}
 
@@ -333,6 +408,9 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 		}
 
 		if settlementAmount > 0.01 {
+			fmt.Printf("DEBUG: Creating settlement - %s pays %s: %.2f\n",
+				userLookup[maxDebtorID], userLookup[maxCreditorID], settlementAmount)
+
 			settlement := models.SettlementSuggestion{
 				GroupID:   groupID,
 				PayerID:   maxDebtorID, // Person who owes money (negative balance)
@@ -348,10 +426,12 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 			netBalances[maxDebtorID] += settlementAmount   // Debtor's balance increases (less negative)
 			netBalances[maxCreditorID] -= settlementAmount // Creditor's balance decreases (less positive)
 		} else {
+			fmt.Printf("DEBUG: Settlement amount too small: %.2f\n", settlementAmount)
 			break
 		}
 	}
 
+	fmt.Printf("DEBUG: Found %d settlements\n", len(settlements))
 	return settlements, nil
 }
 
