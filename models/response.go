@@ -1,8 +1,10 @@
 package models
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Response Base response
@@ -33,4 +35,16 @@ func SendErrorResponse(c *gin.Context, status int, message string) {
 		Message:    message,
 	}
 	response.SendResponse(c)
+}
+
+// SettlementSuggestion represents a suggested settlement between two users
+type SettlementSuggestion struct {
+	GroupID   primitive.ObjectID `json:"group_id"`
+	PayerID   primitive.ObjectID `json:"payer_id"`
+	PayerName string             `json:"payer_name"`
+	PayeeID   primitive.ObjectID `json:"payee_id"`
+	PayeeName string             `json:"payee_name"`
+	Amount    float64            `json:"amount"`
+	Currency  string             `json:"currency"`
+	Status    string             `json:"status"`
 }

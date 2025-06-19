@@ -144,225 +144,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/expenses": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "gets all expenses for the authenticated user with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Get User Expenses",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Switch page by 'page'",
-                        "name": "page",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "creates a new expense in a group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Create Expense",
-                "parameters": [
-                    {
-                        "description": "Expense Request",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateExpenseRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/expenses/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get expense by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Get Expense",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Expense ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "updates an expense by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Update Expense",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Expense ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Expense Request",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UpdateExpenseRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "deletes expense by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Delete Expense",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Expense ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/friends": {
             "get": {
                 "security": [
@@ -900,62 +681,13 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.BulkSettlementsRequest"
+                            "$ref": "#/definitions/models.BulkSettlementsTransactionRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/groups/{groupId}/expenses": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "gets expenses for a specific group with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "expenses"
-                ],
-                "summary": "Get Group Expenses",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "groupId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Switch page by 'page'",
-                        "name": "page",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.Response"
                         }
@@ -987,49 +719,6 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Recalculate Group Balances",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "groupId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/groups/{groupId}/settlements": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "gets all settlements for a specific group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "settlements"
-                ],
-                "summary": "Get Group Settlements",
                 "parameters": [
                     {
                         "type": "string",
@@ -1738,142 +1427,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/settlements": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "gets all settlements for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "settlements"
-                ],
-                "summary": "Get User Settlements",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter by status (pending, completed, cancelled)",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "creates a custom settlement between two users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "settlements"
-                ],
-                "summary": "Create Settlement",
-                "parameters": [
-                    {
-                        "description": "Settlement Request",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateSettlementRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/settlements/{id}/complete": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "marks a settlement as completed",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "settlements"
-                ],
-                "summary": "Mark Settlement Complete",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Settlement ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Settlement Request",
-                        "name": "req",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/models.SettleDebtRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/transactions/expense": {
             "post": {
                 "security": [
@@ -1899,7 +1452,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateExpenseRequest"
+                            "$ref": "#/definitions/models.CreateExpenseTransactionRequest"
                         }
                     }
                 ],
@@ -1944,7 +1497,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateSettlementRequest"
+                            "$ref": "#/definitions/models.CreateSettlementTransactionRequest"
                         }
                     }
                 ],
@@ -2037,7 +1590,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UpdateExpenseRequest"
+                            "$ref": "#/definitions/models.UpdateTransactionRequest"
                         }
                     }
                 ],
@@ -2315,13 +1868,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BulkSettlementsRequest": {
+        "models.BulkSettlementsTransactionRequest": {
             "type": "object",
             "properties": {
                 "settlements": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.CreateSettlementRequest"
+                        "$ref": "#/definitions/models.CreateSettlementTransactionRequest"
                     }
                 }
             }
@@ -2340,7 +1893,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CreateExpenseRequest": {
+        "models.CreateExpenseTransactionRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2361,13 +1914,21 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "payers": {
+                    "description": "Who paid money",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.TransactionPayerRequest"
+                    }
+                },
                 "split_type": {
                     "type": "string"
                 },
                 "splits": {
+                    "description": "How it should be divided",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.ExpenseSplitRequest"
+                        "$ref": "#/definitions/models.TransactionSplitRequest"
                     }
                 }
             }
@@ -2392,7 +1953,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CreateSettlementRequest": {
+        "models.CreateSettlementTransactionRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2411,17 +1972,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "payer_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.ExpenseSplitRequest": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }
@@ -2501,15 +2051,29 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SettleDebtRequest": {
+        "models.TransactionPayerRequest": {
             "type": "object",
             "properties": {
-                "notes": {
+                "amount": {
+                    "type": "number"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
         },
-        "models.UpdateExpenseRequest": {
+        "models.TransactionSplitRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdateTransactionRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2524,13 +2088,19 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "payers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.TransactionPayerRequest"
+                    }
+                },
                 "split_type": {
                     "type": "string"
                 },
                 "splits": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.ExpenseSplitRequest"
+                        "$ref": "#/definitions/models.TransactionSplitRequest"
                     }
                 }
             }

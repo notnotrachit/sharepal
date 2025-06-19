@@ -52,13 +52,7 @@ func GroupRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 			controllers.RemoveMemberFromGroup,
 		)
 
-		// Expenses in groups
-		groups.GET(
-			"/:id/expenses",
-			validators.PathIdValidator(),
-			controllers.GetGroupExpenses,
-		)
-
+		// Note: Group expenses now available via /v1/groups/:id/transactions/expenses
 		// Note: Balances and settlement routes moved to transaction routes
 		// for the new unified transaction-based architecture
 	}

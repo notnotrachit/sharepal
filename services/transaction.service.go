@@ -19,7 +19,7 @@ import (
 type TransactionService struct{}
 
 // CreateExpenseTransaction creates a new expense and updates all related balances atomically
-func (ts *TransactionService) CreateExpenseTransaction(userID primitive.ObjectID, req models.CreateExpenseRequest) (*db.Transaction, error) {
+func (ts *TransactionService) CreateExpenseTransaction(userID primitive.ObjectID, req models.CreateExpenseTransactionRequest) (*db.Transaction, error) {
 	groupID, err := primitive.ObjectIDFromHex(req.GroupID)
 	if err != nil {
 		return nil, errors.New("invalid group ID")
@@ -35,83 +35,109 @@ func (ts *TransactionService) CreateExpenseTransaction(userID primitive.ObjectID
 	transaction := db.NewExpenseTransaction(groupID, req.Description, req.Amount, req.Currency, userID, db.SplitType(req.SplitType), req.Category)
 	transaction.Notes = req.Notes
 
-	// Process participants (splits)
+	// Process payers and splits
+	if len(req.Payers) == 0 {
+		return nil, errors.New("at least one payer is required")
+	}
 	if len(req.Splits) == 0 {
 		return nil, errors.New("at least one split is required")
 	}
 
-	var totalSplit float64
+	// Validate total amounts
+	var totalPaid, totalSplit float64
+	for _, payer := range req.Payers {
+		totalPaid += payer.Amount
+	}
 	for _, split := range req.Splits {
-		splitUserID, err := primitive.ObjectIDFromHex(split.UserID)
-		if err != nil {
-			return nil, errors.New("invalid user ID in split")
-		}
-
-		// Get user name for denormalization
-		user, err := FindUserById(splitUserID)
-		if err != nil {
-			return nil, errors.New("user not found in split")
-		}
-
-		shareType := "split"
-		if splitUserID == userID {
-			shareType = "both" // User both paid and has a share
-		}
-
-		transaction.Participants = append(transaction.Participants, db.TransactionParticipant{
-			UserID:    splitUserID,
-			UserName:  user.Name,
-			Amount:    split.Amount,
-			ShareType: shareType,
-		})
 		totalSplit += split.Amount
 	}
 
-	// Add the payer if not already in splits
-	payerInSplits := false
-	for _, participant := range transaction.Participants {
-		if participant.UserID == userID {
-			payerInSplits = true
-			break
-		}
+	if math.Abs(totalPaid-req.Amount) > 0.01 {
+		return nil, errors.New("total paid amount must equal transaction amount")
+	}
+	if math.Abs(totalSplit-req.Amount) > 0.01 {
+		return nil, errors.New("total split amount must equal transaction amount")
 	}
 
-	if !payerInSplits {
-		user, err := FindUserById(userID)
+	// Process payers
+	for _, payer := range req.Payers {
+		payerUserID, err := primitive.ObjectIDFromHex(payer.UserID)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("invalid payer user ID")
 		}
 
-		transaction.Participants = append(transaction.Participants, db.TransactionParticipant{
-			UserID:    userID,
-			UserName:  user.Name,
-			Amount:    0, // Payer doesn't owe anything
-			ShareType: "payer",
+		// Get user name
+		user, err := FindUserById(payerUserID)
+		if err != nil {
+			return nil, errors.New("payer user not found")
+		}
+
+		transaction.Payers = append(transaction.Payers, db.TransactionPayer{
+			UserID:   payerUserID,
+			UserName: user.Name,
+			Amount:   payer.Amount,
 		})
 	}
 
-	// Validate and adjust splits based on type
-	switch db.SplitType(req.SplitType) {
-	case db.SplitTypeEqual:
-		splitAmount := req.Amount / float64(len(req.Splits))
-		for i := range transaction.Participants {
-			if transaction.Participants[i].ShareType != "payer" {
-				transaction.Participants[i].Amount = math.Round(splitAmount*100) / 100
+	// Process splits
+	for _, split := range req.Splits {
+		splitUserID, err := primitive.ObjectIDFromHex(split.UserID)
+		if err != nil {
+			return nil, errors.New("invalid split user ID")
+		}
+
+		// Get user name
+		user, err := FindUserById(splitUserID)
+		if err != nil {
+			return nil, errors.New("split user not found")
+		}
+
+		transaction.Splits = append(transaction.Splits, db.TransactionSplit{
+			UserID:   splitUserID,
+			UserName: user.Name,
+			Amount:   split.Amount,
+		})
+	}
+
+	// Calculate net participants (for balance updates)
+	participantMap := make(map[primitive.ObjectID]*db.TransactionParticipant)
+
+	// Add payers (positive amounts - they paid money)
+	for _, payer := range transaction.Payers {
+		if participant, exists := participantMap[payer.UserID]; exists {
+			participant.Amount += payer.Amount
+		} else {
+			participantMap[payer.UserID] = &db.TransactionParticipant{
+				UserID:    payer.UserID,
+				UserName:  payer.UserName,
+				Amount:    payer.Amount,
+				ShareType: "payer",
 			}
 		}
-	case db.SplitTypeExact:
-		if math.Abs(totalSplit-req.Amount) > 0.01 {
-			return nil, errors.New("split amounts must add up to total expense amount")
-		}
-	case db.SplitTypePercentage:
-		if math.Abs(totalSplit-100.0) > 0.01 {
-			return nil, errors.New("split percentages must add up to 100")
-		}
-		for i := range transaction.Participants {
-			if transaction.Participants[i].ShareType != "payer" {
-				transaction.Participants[i].Amount = (transaction.Participants[i].Amount / 100.0) * req.Amount
+	}
+
+	// Subtract splits (negative amounts - they owe money)
+	for _, split := range transaction.Splits {
+		if participant, exists := participantMap[split.UserID]; exists {
+			participant.Amount -= split.Amount
+			if participant.ShareType == "payer" {
+				participant.ShareType = "both"
+			} else {
+				participant.ShareType = "split"
+			}
+		} else {
+			participantMap[split.UserID] = &db.TransactionParticipant{
+				UserID:    split.UserID,
+				UserName:  split.UserName,
+				Amount:    -split.Amount,
+				ShareType: "split",
 			}
 		}
+	}
+
+	// Convert map to slice
+	for _, participant := range participantMap {
+		transaction.Participants = append(transaction.Participants, *participant)
 	}
 
 	// Execute transaction with balance updates atomically
@@ -256,14 +282,15 @@ func (ts *TransactionService) GetGroupBalances(groupID, userID primitive.ObjectI
 }
 
 // SimplifyDebtsFromBalances calculates optimal settlements from current balances
-func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitive.ObjectID) ([]SettlementSuggestion, error) {
+func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitive.ObjectID) ([]models.SettlementSuggestion, error) {
 	balances, err := ts.GetGroupBalances(groupID, userID)
 	if err != nil {
-		return nil, err
+		// Log the error for debugging
+		return nil, errors.New("failed to get group balances: " + err.Error())
 	}
 
 	if len(balances) == 0 {
-		return []SettlementSuggestion{}, nil
+		return []models.SettlementSuggestion{}, nil
 	}
 
 	// Convert to map for simplification algorithm
@@ -277,47 +304,49 @@ func (ts *TransactionService) SimplifyDebtsFromBalances(groupID, userID primitiv
 	}
 
 	// Use the same simplification algorithm but with pre-calculated balances
-	var settlements []SettlementSuggestion
+	var settlements []models.SettlementSuggestion
 
 	for {
-		var maxDebtorID, maxCreditorID primitive.ObjectID
-		maxDebt, maxCredit := 0.0, 0.0
+		var maxCreditorID, maxDebtorID primitive.ObjectID
+		maxCredit, maxDebt := 0.0, 0.0
 
 		for userID, balance := range netBalances {
-			if balance > maxDebt {
-				maxDebt = balance
-				maxDebtorID = userID
-			}
-			if balance < maxCredit {
+			if balance > maxCredit {
 				maxCredit = balance
 				maxCreditorID = userID
 			}
+			if balance < maxDebt {
+				maxDebt = balance
+				maxDebtorID = userID
+			}
 		}
 
-		if maxDebt <= 0.01 && maxCredit >= -0.01 {
+		// maxCredit > 0 means user is owed money
+		// maxDebt < 0 means user owes money
+		if maxCredit <= 0.01 && maxDebt >= -0.01 {
 			break
 		}
 
-		settlementAmount := maxDebt
-		if -maxCredit < maxDebt {
-			settlementAmount = -maxCredit
+		settlementAmount := maxCredit
+		if -maxDebt < maxCredit {
+			settlementAmount = -maxDebt
 		}
 
 		if settlementAmount > 0.01 {
-			settlement := SettlementSuggestion{
+			settlement := models.SettlementSuggestion{
 				GroupID:   groupID,
-				PayerID:   maxDebtorID,
+				PayerID:   maxDebtorID, // Person who owes money (negative balance)
 				PayerName: userLookup[maxDebtorID],
-				PayeeID:   maxCreditorID,
+				PayeeID:   maxCreditorID, // Person who is owed money (positive balance)
 				PayeeName: userLookup[maxCreditorID],
 				Amount:    settlementAmount,
 				Currency:  currency,
-				Status:    string(db.SettlementPending),
+				Status:    "pending",
 			}
 			settlements = append(settlements, settlement)
 
-			netBalances[maxDebtorID] -= settlementAmount
-			netBalances[maxCreditorID] += settlementAmount
+			netBalances[maxDebtorID] += settlementAmount   // Debtor's balance increases (less negative)
+			netBalances[maxCreditorID] -= settlementAmount // Creditor's balance decreases (less positive)
 		} else {
 			break
 		}
@@ -429,7 +458,7 @@ func (ts *TransactionService) GetTransactionById(transactionID, userID primitive
 }
 
 // UpdateTransaction updates an expense transaction
-func (ts *TransactionService) UpdateTransaction(transactionID, userID primitive.ObjectID, req models.UpdateExpenseRequest) error {
+func (ts *TransactionService) UpdateTransaction(transactionID, userID primitive.ObjectID, req models.UpdateTransactionRequest) error {
 	transaction, err := ts.GetTransactionById(transactionID, userID)
 	if err != nil {
 		return err
@@ -468,10 +497,10 @@ func (ts *TransactionService) UpdateTransaction(transactionID, userID primitive.
 	}
 
 	// Handle split updates with balance recalculation
-	if req.SplitType != "" && len(req.Splits) > 0 {
+	if req.SplitType != "" && (len(req.Payers) > 0 || len(req.Splits) > 0) {
 		// This would require complex balance recalculation
-		// For now, prevent updates that change splits
-		return errors.New("split updates not yet supported - please delete and recreate the transaction")
+		// For now, prevent updates that change payers/splits
+		return errors.New("payer/split updates not yet supported - please delete and recreate the transaction")
 	}
 
 	if len(updateDoc) <= 2 { // Only updated_at and updated_by
@@ -703,7 +732,7 @@ func (ts *TransactionService) GetGroupAnalytics(groupID, userID primitive.Object
 }
 
 // CreateBulkSettlements creates multiple settlements from suggested settlements
-func (ts *TransactionService) CreateBulkSettlements(groupID, userID primitive.ObjectID, settlementRequests []models.CreateSettlementRequest) ([]*db.Transaction, error) {
+func (ts *TransactionService) CreateBulkSettlements(groupID, userID primitive.ObjectID, settlementRequests []models.CreateSettlementTransactionRequest) ([]*db.Transaction, error) {
 	// Verify user is group member
 	_, err := GetGroupById(groupID, userID)
 	if err != nil {

@@ -29,9 +29,8 @@ func New() *gin.Engine {
 
 		// Splitwise features
 		GroupRoute(v1, middlewares.JWTMiddleware())
-		ExpenseRoute(v1, middlewares.JWTMiddleware())
 		FriendshipRoute(v1, middlewares.JWTMiddleware())
-		// SettlementRoute replaced by TransactionRoutes
+		// Using unified transaction-based system
 		TransactionRoutes(v1)
 	}
 

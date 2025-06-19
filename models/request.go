@@ -90,50 +90,6 @@ func (r AddMemberToGroupRequest) Validate() error {
 	)
 }
 
-// Expense related requests
-type ExpenseSplitRequest struct {
-	UserID string  `json:"user_id"`
-	Amount float64 `json:"amount"`
-}
-
-type CreateExpenseRequest struct {
-	GroupID     string                `json:"group_id"`
-	Description string                `json:"description"`
-	Amount      float64               `json:"amount"`
-	Currency    string                `json:"currency"`
-	SplitType   string                `json:"split_type"`
-	Splits      []ExpenseSplitRequest `json:"splits"`
-	Category    string                `json:"category"`
-	Notes       string                `json:"notes,omitempty"`
-}
-
-func (r CreateExpenseRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.GroupID, validation.Required),
-		validation.Field(&r.Description, validation.Required, validation.Length(1, 200)),
-		validation.Field(&r.Amount, validation.Required, validation.Min(0.01)),
-		validation.Field(&r.Currency, validation.Required, validation.Length(3, 3)),
-		validation.Field(&r.SplitType, validation.Required, validation.In("equal", "exact", "percentage")),
-		validation.Field(&r.Category, validation.Required),
-	)
-}
-
-type UpdateExpenseRequest struct {
-	Description string                `json:"description,omitempty"`
-	Amount      float64               `json:"amount,omitempty"`
-	SplitType   string                `json:"split_type,omitempty"`
-	Splits      []ExpenseSplitRequest `json:"splits,omitempty"`
-	Category    string                `json:"category,omitempty"`
-	Notes       string                `json:"notes,omitempty"`
-}
-
-func (r UpdateExpenseRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Amount, validation.Min(0.0)),                                  // Allow 0 for optional field
-		validation.Field(&r.SplitType, validation.In("", "equal", "exact", "percentage")), // Allow empty
-	)
-}
-
 // Friendship related requests
 type SendFriendRequestRequest struct {
 	Email string `json:"email"`
@@ -153,8 +109,60 @@ func (r RespondFriendRequestRequest) Validate() error {
 	return validation.ValidateStruct(&r)
 }
 
-// Settlement related requests
-type CreateSettlementRequest struct {
+// Transaction related requests
+type TransactionPayerRequest struct {
+	UserID string  `json:"user_id"`
+	Amount float64 `json:"amount"`
+}
+
+type TransactionSplitRequest struct {
+	UserID string  `json:"user_id"`
+	Amount float64 `json:"amount"`
+}
+
+type CreateExpenseTransactionRequest struct {
+	GroupID     string                    `json:"group_id"`
+	Description string                    `json:"description"`
+	Amount      float64                   `json:"amount"`
+	Currency    string                    `json:"currency"`
+	SplitType   string                    `json:"split_type"`
+	Payers      []TransactionPayerRequest `json:"payers"` // Who paid money
+	Splits      []TransactionSplitRequest `json:"splits"` // How it should be divided
+	Category    string                    `json:"category"`
+	Notes       string                    `json:"notes,omitempty"`
+}
+
+func (r CreateExpenseTransactionRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.GroupID, validation.Required),
+		validation.Field(&r.Description, validation.Required, validation.Length(1, 200)),
+		validation.Field(&r.Amount, validation.Required, validation.Min(0.01)),
+		validation.Field(&r.Currency, validation.Required, validation.Length(3, 3)),
+		validation.Field(&r.SplitType, validation.Required, validation.In("equal", "exact", "percentage")),
+		validation.Field(&r.Category, validation.Required),
+		validation.Field(&r.Payers, validation.Required, validation.Length(1, 50)),
+		validation.Field(&r.Splits, validation.Required, validation.Length(1, 50)),
+	)
+}
+
+type UpdateTransactionRequest struct {
+	Description string                    `json:"description,omitempty"`
+	Amount      float64                   `json:"amount,omitempty"`
+	SplitType   string                    `json:"split_type,omitempty"`
+	Payers      []TransactionPayerRequest `json:"payers,omitempty"`
+	Splits      []TransactionSplitRequest `json:"splits,omitempty"`
+	Category    string                    `json:"category,omitempty"`
+	Notes       string                    `json:"notes,omitempty"`
+}
+
+func (r UpdateTransactionRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Amount, validation.Min(0.0)),
+		validation.Field(&r.SplitType, validation.In("", "equal", "exact", "percentage")),
+	)
+}
+
+type CreateSettlementTransactionRequest struct {
 	GroupID  string  `json:"group_id"`
 	PayerID  string  `json:"payer_id"`
 	PayeeID  string  `json:"payee_id"`
@@ -163,7 +171,7 @@ type CreateSettlementRequest struct {
 	Notes    string  `json:"notes,omitempty"`
 }
 
-func (r CreateSettlementRequest) Validate() error {
+func (r CreateSettlementTransactionRequest) Validate() error {
 	return validation.ValidateStruct(&r,
 		validation.Field(&r.GroupID, validation.Required),
 		validation.Field(&r.PayerID, validation.Required),
@@ -173,12 +181,14 @@ func (r CreateSettlementRequest) Validate() error {
 	)
 }
 
-type SettleDebtRequest struct {
-	Notes string `json:"notes,omitempty"`
+type BulkSettlementsTransactionRequest struct {
+	Settlements []CreateSettlementTransactionRequest `json:"settlements"`
 }
 
-func (r SettleDebtRequest) Validate() error {
-	return validation.ValidateStruct(&r)
+func (r BulkSettlementsTransactionRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Settlements, validation.Required, validation.Length(1, 50)),
+	)
 }
 
 type CompleteTransactionRequest struct {
@@ -189,14 +199,4 @@ type CompleteTransactionRequest struct {
 
 func (r CompleteTransactionRequest) Validate() error {
 	return validation.ValidateStruct(&r)
-}
-
-type BulkSettlementsRequest struct {
-	Settlements []CreateSettlementRequest `json:"settlements"`
-}
-
-func (r BulkSettlementsRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Settlements, validation.Required, validation.Length(1, 50)),
-	)
 }

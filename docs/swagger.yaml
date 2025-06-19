@@ -5,11 +5,11 @@ definitions:
       user_id:
         type: string
     type: object
-  models.BulkSettlementsRequest:
+  models.BulkSettlementsTransactionRequest:
     properties:
       settlements:
         items:
-          $ref: '#/definitions/models.CreateSettlementRequest'
+          $ref: '#/definitions/models.CreateSettlementTransactionRequest'
         type: array
     type: object
   models.CompleteTransactionRequest:
@@ -21,7 +21,7 @@ definitions:
       settlement_method:
         type: string
     type: object
-  models.CreateExpenseRequest:
+  models.CreateExpenseTransactionRequest:
     properties:
       amount:
         type: number
@@ -35,11 +35,17 @@ definitions:
         type: string
       notes:
         type: string
+      payers:
+        description: Who paid money
+        items:
+          $ref: '#/definitions/models.TransactionPayerRequest'
+        type: array
       split_type:
         type: string
       splits:
+        description: How it should be divided
         items:
-          $ref: '#/definitions/models.ExpenseSplitRequest'
+          $ref: '#/definitions/models.TransactionSplitRequest'
         type: array
     type: object
   models.CreateGroupRequest:
@@ -55,7 +61,7 @@ definitions:
       name:
         type: string
     type: object
-  models.CreateSettlementRequest:
+  models.CreateSettlementTransactionRequest:
     properties:
       amount:
         type: number
@@ -68,13 +74,6 @@ definitions:
       payee_id:
         type: string
       payer_id:
-        type: string
-    type: object
-  models.ExpenseSplitRequest:
-    properties:
-      amount:
-        type: number
-      user_id:
         type: string
     type: object
   models.LoginRequest:
@@ -125,12 +124,21 @@ definitions:
       email:
         type: string
     type: object
-  models.SettleDebtRequest:
+  models.TransactionPayerRequest:
     properties:
-      notes:
+      amount:
+        type: number
+      user_id:
         type: string
     type: object
-  models.UpdateExpenseRequest:
+  models.TransactionSplitRequest:
+    properties:
+      amount:
+        type: number
+      user_id:
+        type: string
+    type: object
+  models.UpdateTransactionRequest:
     properties:
       amount:
         type: number
@@ -140,11 +148,15 @@ definitions:
         type: string
       notes:
         type: string
+      payers:
+        items:
+          $ref: '#/definitions/models.TransactionPayerRequest'
+        type: array
       split_type:
         type: string
       splits:
         items:
-          $ref: '#/definitions/models.ExpenseSplitRequest'
+          $ref: '#/definitions/models.TransactionSplitRequest'
         type: array
     type: object
 host: localhost:8080
@@ -239,144 +251,6 @@ paths:
       summary: Register
       tags:
       - auth
-  /expenses:
-    get:
-      consumes:
-      - application/json
-      description: gets all expenses for the authenticated user with pagination
-      parameters:
-      - description: Switch page by 'page'
-        in: query
-        name: page
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get User Expenses
-      tags:
-      - expenses
-    post:
-      consumes:
-      - application/json
-      description: creates a new expense in a group
-      parameters:
-      - description: Expense Request
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateExpenseRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Create Expense
-      tags:
-      - expenses
-  /expenses/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: deletes expense by id
-      parameters:
-      - description: Expense ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Delete Expense
-      tags:
-      - expenses
-    get:
-      consumes:
-      - application/json
-      description: get expense by id
-      parameters:
-      - description: Expense ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get Expense
-      tags:
-      - expenses
-    put:
-      consumes:
-      - application/json
-      description: updates an expense by id
-      parameters:
-      - description: Expense ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Update Expense Request
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateExpenseRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Update Expense
-      tags:
-      - expenses
   /friends:
     get:
       consumes:
@@ -710,7 +584,7 @@ paths:
         name: req
         required: true
         schema:
-          $ref: '#/definitions/models.BulkSettlementsRequest'
+          $ref: '#/definitions/models.BulkSettlementsTransactionRequest'
       produces:
       - application/json
       responses:
@@ -727,37 +601,6 @@ paths:
       summary: Create Bulk Settlements
       tags:
       - transactions
-  /groups/{groupId}/expenses:
-    get:
-      consumes:
-      - application/json
-      description: gets expenses for a specific group with pagination
-      parameters:
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: string
-      - description: Switch page by 'page'
-        in: query
-        name: page
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get Group Expenses
-      tags:
-      - expenses
   /groups/{groupId}/recalculate-balances:
     post:
       consumes:
@@ -785,33 +628,6 @@ paths:
       summary: Recalculate Group Balances
       tags:
       - transactions
-  /groups/{groupId}/settlements:
-    get:
-      consumes:
-      - application/json
-      description: gets all settlements for a specific group
-      parameters:
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get Group Settlements
-      tags:
-      - settlements
   /groups/{groupId}/simplify:
     get:
       consumes:
@@ -1245,91 +1061,6 @@ paths:
       summary: Ping
       tags:
       - ping
-  /settlements:
-    get:
-      consumes:
-      - application/json
-      description: gets all settlements for the authenticated user
-      parameters:
-      - description: Filter by status (pending, completed, cancelled)
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get User Settlements
-      tags:
-      - settlements
-    post:
-      consumes:
-      - application/json
-      description: creates a custom settlement between two users
-      parameters:
-      - description: Settlement Request
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateSettlementRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Create Settlement
-      tags:
-      - settlements
-  /settlements/{id}/complete:
-    post:
-      consumes:
-      - application/json
-      description: marks a settlement as completed
-      parameters:
-      - description: Settlement ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Settlement Request
-        in: body
-        name: req
-        schema:
-          $ref: '#/definitions/models.SettleDebtRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Mark Settlement Complete
-      tags:
-      - settlements
   /transactions/{id}:
     delete:
       consumes:
@@ -1398,7 +1129,7 @@ paths:
         name: req
         required: true
         schema:
-          $ref: '#/definitions/models.UpdateExpenseRequest'
+          $ref: '#/definitions/models.UpdateTransactionRequest'
       produces:
       - application/json
       responses:
@@ -1458,7 +1189,7 @@ paths:
         name: expense
         required: true
         schema:
-          $ref: '#/definitions/models.CreateExpenseRequest'
+          $ref: '#/definitions/models.CreateExpenseTransactionRequest'
       produces:
       - application/json
       responses:
@@ -1486,7 +1217,7 @@ paths:
         name: settlement
         required: true
         schema:
-          $ref: '#/definitions/models.CreateSettlementRequest'
+          $ref: '#/definitions/models.CreateSettlementTransactionRequest'
       produces:
       - application/json
       responses:

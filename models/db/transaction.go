@@ -17,11 +17,34 @@ const (
 	TransactionTypeAdjustment TransactionType = "adjustment"
 )
 
-// TransactionParticipant represents a user's involvement in a transaction
+type SplitType string
+
+const (
+	// Split Types for expenses
+	SplitTypeEqual      SplitType = "equal"
+	SplitTypeExact      SplitType = "exact"
+	SplitTypePercentage SplitType = "percentage"
+)
+
+// TransactionPayer represents who actually paid money
+type TransactionPayer struct {
+	UserID   primitive.ObjectID `json:"user_id" bson:"user_id"`
+	UserName string             `json:"user_name" bson:"user_name"`
+	Amount   float64            `json:"amount" bson:"amount"` // Amount they paid
+}
+
+// TransactionSplit represents how the expense should be divided
+type TransactionSplit struct {
+	UserID   primitive.ObjectID `json:"user_id" bson:"user_id"`
+	UserName string             `json:"user_name" bson:"user_name"`
+	Amount   float64            `json:"amount" bson:"amount"` // Amount they owe
+}
+
+// TransactionParticipant represents a user's net involvement (for backward compatibility)
 type TransactionParticipant struct {
 	UserID    primitive.ObjectID `json:"user_id" bson:"user_id"`
-	UserName  string             `json:"user_name" bson:"user_name"`   // Denormalized for performance
-	Amount    float64            `json:"amount" bson:"amount"`         // Positive = they paid, Negative = they owe
+	UserName  string             `json:"user_name" bson:"user_name"`
+	Amount    float64            `json:"amount" bson:"amount"`         // Net amount (paid - owed)
 	ShareType string             `json:"share_type" bson:"share_type"` // "payer", "split", "both"
 }
 
@@ -37,7 +60,11 @@ type Transaction struct {
 	Currency    string             `json:"currency" bson:"currency"`
 	Date        time.Time          `json:"date" bson:"date"`
 
-	// Participants (replaces splits and payer/payee)
+	// New structure for expenses
+	Payers []TransactionPayer `json:"payers,omitempty" bson:"payers,omitempty"` // Who paid money
+	Splits []TransactionSplit `json:"splits,omitempty" bson:"splits,omitempty"` // How expense is divided
+
+	// Legacy participants field (for backward compatibility and settlements)
 	Participants []TransactionParticipant `json:"participants" bson:"participants"`
 
 	// Expense-specific fields (only for expense type)

@@ -19,13 +19,13 @@ var transactionService = &services.TransactionService{}
 // @Tags         transactions
 // @Accept       json
 // @Produce      json
-// @Param        expense  body      models.CreateExpenseRequest  true  "Expense Request"
+// @Param        expense  body      models.CreateExpenseTransactionRequest  true  "Expense Request"
 // @Success      201  {object}  models.Response
 // @Failure      400  {object}  models.Response
 // @Router       /transactions/expense [post]
 // @Security     ApiKeyAuth
 func CreateExpenseTransaction(c *gin.Context) {
-	var requestBody models.CreateExpenseRequest
+	var requestBody models.CreateExpenseTransactionRequest
 	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
 
 	response := &models.Response{
@@ -60,13 +60,13 @@ func CreateExpenseTransaction(c *gin.Context) {
 // @Tags         transactions
 // @Accept       json
 // @Produce      json
-// @Param        settlement  body      models.CreateSettlementRequest  true  "Settlement Request"
+// @Param        settlement  body      models.CreateSettlementTransactionRequest  true  "Settlement Request"
 // @Success      201  {object}  models.Response
 // @Failure      400  {object}  models.Response
 // @Router       /transactions/settlement [post]
 // @Security     ApiKeyAuth
 func CreateSettlementTransaction(c *gin.Context) {
-	var requestBody models.CreateSettlementRequest
+	var requestBody models.CreateSettlementTransactionRequest
 	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
 
 	response := &models.Response{
@@ -383,13 +383,13 @@ func GetTransactionById(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "Transaction ID"
-// @Param        req  body      models.UpdateExpenseRequest  true  "Update Request"
+// @Param        req  body      models.UpdateTransactionRequest  true  "Update Request"
 // @Success      200  {object}  models.Response
 // @Failure      400  {object}  models.Response
 // @Router       /transactions/{id} [put]
 // @Security     ApiKeyAuth
 func UpdateTransaction(c *gin.Context) {
-	var requestBody models.UpdateExpenseRequest
+	var requestBody models.UpdateTransactionRequest
 	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
 
 	response := &models.Response{
@@ -671,13 +671,13 @@ func GetGroupAnalytics(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        groupId  path      string  true  "Group ID"
-// @Param        req      body      models.BulkSettlementsRequest  true  "Bulk Settlements Request"
+// @Param        req      body      models.BulkSettlementsTransactionRequest  true  "Bulk Settlements Request"
 // @Success      201  {object}  models.Response
 // @Failure      400  {object}  models.Response
 // @Router       /groups/{groupId}/bulk-settlements [post]
 // @Security     ApiKeyAuth
 func CreateBulkSettlements(c *gin.Context) {
-	var requestBody models.BulkSettlementsRequest
+	var requestBody models.BulkSettlementsTransactionRequest
 	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
 
 	response := &models.Response{
