@@ -102,7 +102,7 @@ func CreateSettlementTransaction(c *gin.Context) {
 		return
 	}
 
-	transaction, err := transactionService.CreateSettlementTransaction(groupId, payerId, payeeId, requestBody.Amount, requestBody.Currency, requestBody.Notes, userId.(primitive.ObjectID))
+	transaction, err := transactionService.CreateSettlementTransaction(groupId, payerId, payeeId, requestBody.Amount, requestBody.Currency, requestBody.Notes, requestBody.IsCompleted, userId.(primitive.ObjectID))
 	if err != nil {
 		response.Message = err.Error()
 		response.SendResponse(c)

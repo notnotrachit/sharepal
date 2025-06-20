@@ -35,6 +35,7 @@ func (ts *TransactionService) CreateExpenseTransaction(userID primitive.ObjectID
 	// Create the transaction
 	transaction := db.NewExpenseTransaction(groupID, req.Description, req.Amount, req.Currency, userID, db.SplitType(req.SplitType), req.Category)
 	transaction.Notes = req.Notes
+	transaction.IsCompleted = req.IsCompleted
 
 	// Process payers and splits
 	if len(req.Payers) == 0 {
@@ -146,7 +147,7 @@ func (ts *TransactionService) CreateExpenseTransaction(userID primitive.ObjectID
 }
 
 // CreateSettlementTransaction creates a settlement between two users
-func (ts *TransactionService) CreateSettlementTransaction(groupID, payerID, payeeID primitive.ObjectID, amount float64, currency string, notes string, createdBy primitive.ObjectID) (*db.Transaction, error) {
+func (ts *TransactionService) CreateSettlementTransaction(groupID, payerID, payeeID primitive.ObjectID, amount float64, currency string, notes string, isCompleted bool, createdBy primitive.ObjectID) (*db.Transaction, error) {
 	// Verify users are group members
 	group, err := GetGroupById(groupID, createdBy)
 	if err != nil {
@@ -166,6 +167,7 @@ func (ts *TransactionService) CreateSettlementTransaction(groupID, payerID, paye
 
 	transaction := db.NewSettlementTransaction(groupID, payerID, payeeID, amount, currency)
 	transaction.Notes = notes
+	transaction.IsCompleted = isCompleted
 	transaction.CreatedBy = createdBy
 
 	// Update participant names
@@ -845,7 +847,7 @@ func (ts *TransactionService) CreateBulkSettlements(groupID, userID primitive.Ob
 			return nil, errors.New("invalid payee ID in settlement request")
 		}
 
-		settlement, err := ts.CreateSettlementTransaction(groupID, payerID, payeeID, req.Amount, req.Currency, req.Notes, userID)
+		settlement, err := ts.CreateSettlementTransaction(groupID, payerID, payeeID, req.Amount, req.Currency, req.Notes, req.IsCompleted, userID)
 		if err != nil {
 			return nil, err
 		}

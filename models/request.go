@@ -130,6 +130,7 @@ type CreateExpenseTransactionRequest struct {
 	Splits      []TransactionSplitRequest `json:"splits"` // How it should be divided
 	Category    string                    `json:"category"`
 	Notes       string                    `json:"notes,omitempty"`
+	IsCompleted bool                      `json:"is_completed,omitempty"`
 }
 
 func (r CreateExpenseTransactionRequest) Validate() error {
@@ -163,12 +164,13 @@ func (r UpdateTransactionRequest) Validate() error {
 }
 
 type CreateSettlementTransactionRequest struct {
-	GroupID  string  `json:"group_id"`
-	PayerID  string  `json:"payer_id"`
-	PayeeID  string  `json:"payee_id"`
-	Amount   float64 `json:"amount"`
-	Currency string  `json:"currency"`
-	Notes    string  `json:"notes,omitempty"`
+	GroupID     string  `json:"group_id"`
+	PayerID     string  `json:"payer_id"`
+	PayeeID     string  `json:"payee_id"`
+	Amount      float64 `json:"amount"`
+	Currency    string  `json:"currency"`
+	Notes       string  `json:"notes,omitempty"`
+	IsCompleted bool    `json:"is_completed,omitempty"`
 }
 
 func (r CreateSettlementTransactionRequest) Validate() error {
