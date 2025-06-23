@@ -2,6 +2,7 @@ package models
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -47,4 +48,24 @@ type SettlementSuggestion struct {
 	Amount    float64            `json:"amount"`
 	Currency  string             `json:"currency"`
 	Status    string             `json:"status"`
+}
+
+// FriendRequestResponse represents a friend request with requester details
+type FriendRequestResponse struct {
+	ID             primitive.ObjectID `json:"id"`
+	RequesterID    primitive.ObjectID `json:"requester_id"`
+	RequesterName  string             `json:"requester_name"`
+	RequesterEmail string             `json:"requester_email"`
+	Status         string             `json:"status"`
+	RequestedAt    time.Time          `json:"requested_at"`
+}
+
+// SentFriendRequestResponse represents a sent friend request with addressee details
+type SentFriendRequestResponse struct {
+	ID             primitive.ObjectID `json:"id"`
+	AddresseeID    primitive.ObjectID `json:"addressee_id"`
+	AddresseeName  string             `json:"addressee_name"`
+	AddresseeEmail string             `json:"addressee_email"`
+	Status         string             `json:"status"`
+	RequestedAt    time.Time          `json:"requested_at"`
 }

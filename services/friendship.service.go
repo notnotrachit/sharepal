@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models"
 	db "github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models/db"
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -129,7 +130,7 @@ func GetFriends(userID primitive.ObjectID) ([]*db.User, error) {
 	return friends, err
 }
 
-func GetPendingFriendRequests(userID primitive.ObjectID) ([]*db.Friendship, error) {
+func GetPendingFriendRequests(userID primitive.ObjectID) ([]*models.FriendRequestResponse, error) {
 	var friendships []*db.Friendship
 
 	err := mgm.Coll(&db.Friendship{}).SimpleFind(&friendships, bson.M{
@@ -137,10 +138,35 @@ func GetPendingFriendRequests(userID primitive.ObjectID) ([]*db.Friendship, erro
 		"status":       db.FriendshipPending,
 	})
 
-	return friendships, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response format with requester details
+	var requests []*models.FriendRequestResponse
+	for _, friendship := range friendships {
+		// Get requester details
+		requester := &db.User{}
+		err := mgm.Coll(requester).FindByID(friendship.RequesterID, requester)
+		if err != nil {
+			continue // Skip if requester not found
+		}
+
+		request := &models.FriendRequestResponse{
+			ID:             friendship.ID,
+			RequesterID:    friendship.RequesterID,
+			RequesterName:  requester.Name,
+			RequesterEmail: requester.Email,
+			Status:         string(friendship.Status),
+			RequestedAt:    friendship.RequestedAt,
+		}
+		requests = append(requests, request)
+	}
+
+	return requests, nil
 }
 
-func GetSentFriendRequests(userID primitive.ObjectID) ([]*db.Friendship, error) {
+func GetSentFriendRequests(userID primitive.ObjectID) ([]*models.SentFriendRequestResponse, error) {
 	var friendships []*db.Friendship
 
 	err := mgm.Coll(&db.Friendship{}).SimpleFind(&friendships, bson.M{
@@ -148,7 +174,32 @@ func GetSentFriendRequests(userID primitive.ObjectID) ([]*db.Friendship, error) 
 		"status":       db.FriendshipPending,
 	})
 
-	return friendships, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response format with addressee details
+	var requests []*models.SentFriendRequestResponse
+	for _, friendship := range friendships {
+		// Get addressee details
+		addressee := &db.User{}
+		err := mgm.Coll(addressee).FindByID(friendship.AddresseeID, addressee)
+		if err != nil {
+			continue // Skip if addressee not found
+		}
+
+		request := &models.SentFriendRequestResponse{
+			ID:             friendship.ID,
+			AddresseeID:    friendship.AddresseeID,
+			AddresseeName:  addressee.Name,
+			AddresseeEmail: addressee.Email,
+			Status:         string(friendship.Status),
+			RequestedAt:    friendship.RequestedAt,
+		}
+		requests = append(requests, request)
+	}
+
+	return requests, nil
 }
 
 func RemoveFriend(userID, friendID primitive.ObjectID) error {
