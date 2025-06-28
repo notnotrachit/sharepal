@@ -202,3 +202,13 @@ type CompleteTransactionRequest struct {
 func (r CompleteTransactionRequest) Validate() error {
 	return validation.ValidateStruct(&r)
 }
+
+type UpdateFCMTokenRequest struct {
+	FCMToken string `json:"fcm_token"`
+}
+
+func (r UpdateFCMTokenRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.FCMToken, validation.Required),
+	)
+}

@@ -12,12 +12,15 @@ func LoadConfig() {
 	v.AutomaticEnv()
 	v.SetDefault("SERVER_PORT", "8080")
 	v.SetDefault("MODE", "debug")
+	v.SetDefault("FIREBASE_CREDENTIALS_JSON", "")
 	v.SetConfigType("dotenv")
 	v.SetConfigName(".env")
 	v.AddConfigPath("./")
 
 	if err := v.ReadInConfig(); err != nil {
-		panic(err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			panic(err)
+		}
 	}
 
 	if err := v.Unmarshal(&Config); err != nil {

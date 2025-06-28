@@ -16,6 +16,7 @@ type User struct {
 	Name             string `json:"name" bson:"name"`
 	Role             string `json:"role" bson:"role"`
 	MailVerified     bool   `json:"mail_verified" bson:"mail_verified"`
+	FCMToken         string `json:"fcm_token" bson:"fcm_token"`
 }
 
 type UserClaims struct {
@@ -31,6 +32,7 @@ func NewUser(email string, password string, name string, role string) *User {
 		Name:         name,
 		Role:         role,
 		MailVerified: false,
+		FCMToken:     "",
 	}
 }
 

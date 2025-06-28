@@ -38,6 +38,16 @@ func SendErrorResponse(c *gin.Context, status int, message string) {
 	response.SendResponse(c)
 }
 
+func SendSuccessResponse(c *gin.Context, message string, data map[string]any) {
+	response := &Response{
+		StatusCode: http.StatusOK,
+		Success:    true,
+		Message:    message,
+		Data:       data,
+	}
+	response.SendResponse(c)
+}
+
 // SettlementSuggestion represents a suggested settlement between two users
 type SettlementSuggestion struct {
 	GroupID   primitive.ObjectID `json:"group_id"`

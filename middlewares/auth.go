@@ -10,7 +10,12 @@ import (
 
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := c.GetHeader("Bearer-Token")
+		authHeader := c.GetHeader("Bearer-Token")
+		if authHeader == "" {
+			models.SendErrorResponse(c, http.StatusUnauthorized, "Authorization header required")
+			return
+		}
+		token := authHeader
 		tokenModel, err := services.VerifyToken(token, db.TokenTypeAccess)
 		if err != nil {
 			models.SendErrorResponse(c, http.StatusUnauthorized, err.Error())

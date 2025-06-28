@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -240,6 +241,21 @@ func (ts *TransactionService) executeTransactionWithBalanceUpdate(transaction *d
 		result = transaction
 		return nil
 	})
+
+	if err == nil {
+		// Send notifications to all participants
+		for _, participant := range transaction.Participants {
+			user, err := FindUserById(participant.UserID)
+			if err == nil && user.FCMToken != "" {
+				go func(user *db.User) {
+					err := Notification.SendNotification(user.FCMToken, "New Transaction", "A new transaction has been added to "+group.Name)
+					if err != nil {
+						log.Printf("Error sending transaction notification to %s: %v\n", user.Email, err)
+					}
+				}(user)
+			}
+		}
+	}
 
 	return result, err
 }

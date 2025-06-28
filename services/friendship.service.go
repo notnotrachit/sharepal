@@ -56,8 +56,22 @@ func SendFriendRequest(requesterID primitive.ObjectID, email string) error {
 	// Create new friend request
 	friendship := db.NewFriendship(requesterID, addressee.ID)
 	err = mgm.Coll(friendship).Create(friendship)
+	if err != nil {
+		return err
+	}
 
-	return err
+	requester, err := FindUserById(requesterID)
+	if err != nil {
+		return nil
+	}
+
+	if addressee.FCMToken != "" {
+		go func() {
+			_ = Notification.SendNotification(addressee.FCMToken, "New Friend Request", requester.Name+" has sent you a friend request.")
+		}()
+	}
+
+	return nil
 }
 
 func RespondToFriendRequest(friendshipID primitive.ObjectID, addresseeID primitive.ObjectID, accept bool) error {

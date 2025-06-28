@@ -58,3 +58,18 @@ func CheckUserMail(email string) error {
 
 	return nil
 }
+
+func UpdateFCMToken(userId primitive.ObjectID, fcmToken string) error {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	user.FCMToken = fcmToken
+	err = mgm.Coll(user).Update(user)
+	if err != nil {
+		return errors.New("cannot update fcm token")
+	}
+
+	return nil
+}
