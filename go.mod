@@ -19,7 +19,6 @@ require (
 	go.mongodb.org/mongo-driver v1.12.0
 	golang.org/x/crypto v0.38.0
 	google.golang.org/api v0.231.0
-	honnef.co/go/tools v0.0.1-2020.1.4
 )
 
 require (
