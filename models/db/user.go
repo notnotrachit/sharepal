@@ -17,6 +17,7 @@ type User struct {
 	Role             string `json:"role" bson:"role"`
 	MailVerified     bool   `json:"mail_verified" bson:"mail_verified"`
 	FCMToken         string `json:"fcm_token" bson:"fcm_token"`
+	ProfilePicUrl string `json:"profile_pic_url,omitempty" bson:"profile_pic_url,omitempty"`
 }
 
 type UserClaims struct {
@@ -27,12 +28,22 @@ type UserClaims struct {
 
 func NewUser(email string, password string, name string, role string) *User {
 	return &User{
-		Email:        email,
-		Password:     password,
-		Name:         name,
-		Role:         role,
+		Email:    email,
+		Password: password,
+		Name:     name,
+		Role:     role,
 		MailVerified: false,
 		FCMToken:     "",
+	}
+}
+
+func NewGoogleUser(email string, name string, profilePicUrl string) *User {
+	return &User{
+		Email:         email,
+		Name:          name,
+		ProfilePicUrl: profilePicUrl,
+		Role:          RoleUser,
+		MailVerified:  true,
 	}
 }
 

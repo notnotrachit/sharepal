@@ -17,6 +17,7 @@ type EnvConfig struct {
 	JWTRefreshExpirationDays   int    `mapstructure:"JWT_REFRESH_EXPIRATION_DAYS"`
 	Mode                       string `mapstructure:"MODE"`
 	FirebaseCredentialsJSON    string `mapstructure:"FIREBASE_CREDENTIALS_JSON"`
+	GoogleClientID             string `mapstructure:"GOOGLE_CLIENT_ID"`
 }
 
 func (config *EnvConfig) Validate() error {
@@ -36,5 +37,6 @@ func (config *EnvConfig) Validate() error {
 
 		validation.Field(&config.Mode, validation.In("debug", "release")),
 		validation.Field(&config.FirebaseCredentialsJSON, validation.Required),
+		validation.Field(&config.GoogleClientID, validation.Required),
 	)
 }

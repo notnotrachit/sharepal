@@ -51,3 +51,18 @@ func RefreshValidator() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func GoogleSignInValidator() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		var googleSignInRequest models.GoogleSignInRequest
+		_ = c.ShouldBindBodyWith(&googleSignInRequest, binding.JSON)
+
+		if err := googleSignInRequest.Validate(); err != nil {
+			models.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		c.Next()
+	}
+}

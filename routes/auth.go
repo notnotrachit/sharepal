@@ -26,5 +26,11 @@ func AuthRoute(router *gin.RouterGroup) {
 			validators.RefreshValidator(),
 			controllers.Refresh,
 		)
+
+		auth.POST(
+			"/google/signin",
+			validators.GoogleSignInValidator(),
+			controllers.GoogleSignIn,
+		)
 	}
 }

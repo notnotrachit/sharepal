@@ -212,3 +212,13 @@ func (r UpdateFCMTokenRequest) Validate() error {
 		validation.Field(&r.FCMToken, validation.Required),
 	)
 }
+
+type GoogleSignInRequest struct {
+	IDToken string `json:"id_token"`
+}
+
+func (a GoogleSignInRequest) Validate() error {
+	return validation.ValidateStruct(&a,
+		validation.Field(&a.IDToken, validation.Required),
+	)
+}

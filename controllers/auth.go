@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 )
 
 // Register godoc
@@ -209,5 +211,70 @@ func GetMe(c *gin.Context) {
 	response.StatusCode = http.StatusOK
 	response.Success = true
 	response.Data = gin.H{"user": user}
+	response.SendResponse(c)
+}
+
+func GoogleSignIn(c *gin.Context) {
+	var requestBody models.GoogleSignInRequest
+	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
+
+	response := &models.Response{
+		StatusCode: http.StatusBadRequest,
+		Success:    false,
+	}
+
+	payload, err := idtoken.Validate(context.Background(), requestBody.IDToken, services.Config.GoogleClientID)
+	if err != nil {
+		response.Message = "Invalid Google token"
+		response.SendResponse(c)
+		return
+	}
+
+	name := payload.Claims["name"].(string)
+	email := payload.Claims["email"].(string)
+	picture := payload.Claims["picture"].(string)
+
+	user, err := services.FindUserByEmail(email)
+	if err != nil {
+		// User does not exist, create a new one
+		user, err = services.CreateGoogleUser(name, email, picture)
+		if err != nil {
+			response.Message = "Failed to create user"
+			response.SendResponse(c)
+			return
+		}
+	} else {
+		// User exists, update their profile picture if it's different
+		err = services.UpdateUserProfilePicture(user.ID, picture)
+		if err != nil {
+			response.Message = "Failed to update profile picture"
+			response.SendResponse(c)
+			return
+		}
+		// Refresh user data to get the updated profile picture
+		user, err = services.FindUserById(user.ID)
+		if err != nil {
+			response.Message = "Failed to retrieve updated user"
+			response.SendResponse(c)
+			return
+		}
+	}
+
+	accessToken, refreshToken, err := services.GenerateAccessTokens(user)
+	if err != nil {
+		response.Message = err.Error()
+		response.SendResponse(c)
+		return
+	}
+
+	response.StatusCode = http.StatusOK
+	response.Success = true
+	response.Data = gin.H{
+		"user": user,
+		"token": gin.H{
+			"access":  accessToken.GetResponseJson(),
+			"refresh": refreshToken.GetResponseJson(),
+		},
+	}
 	response.SendResponse(c)
 }

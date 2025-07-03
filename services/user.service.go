@@ -25,6 +25,15 @@ func CreateUser(name string, email string, plainPassword string) (*db.User, erro
 	return user, nil
 }
 
+func CreateGoogleUser(name, email, profilePicUrl string) (*db.User, error) {
+	user := db.NewGoogleUser(email, name, profilePicUrl)
+	err := mgm.Coll(user).Create(user)
+	if err != nil {
+		return nil, errors.New("cannot create new user")
+	}
+	return user, nil
+}
+
 // FindUserById find user by id
 func FindUserById(userId primitive.ObjectID) (*db.User, error) {
 	user := &db.User{}
@@ -69,6 +78,24 @@ func UpdateFCMToken(userId primitive.ObjectID, fcmToken string) error {
 	err = mgm.Coll(user).Update(user)
 	if err != nil {
 		return errors.New("cannot update fcm token")
+	}
+
+	return nil
+}
+
+func UpdateUserProfilePicture(userId primitive.ObjectID, profilePicUrl string) error {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	// Only update if the profile picture URL is different
+	if user.ProfilePicUrl != profilePicUrl {
+		user.ProfilePicUrl = profilePicUrl
+		err = mgm.Coll(user).Update(user)
+		if err != nil {
+			return errors.New("cannot update profile picture")
+		}
 	}
 
 	return nil
