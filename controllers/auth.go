@@ -58,11 +58,15 @@ func Register(c *gin.Context) {
 		response.SendResponse(c)
 		return
 	}
+	userWithProfilePic, err := services.GetUserWithProfilePictureURL(user.ID, 60)
+	if err != nil {
+		userWithProfilePic = user
+	}
 
 	response.StatusCode = http.StatusCreated
 	response.Success = true
 	response.Data = gin.H{
-		"user": user,
+		"user": userWithProfilePic,
 		"token": gin.H{
 			"access":  accessToken.GetResponseJson(),
 			"refresh": refreshToken.GetResponseJson()},
@@ -113,10 +117,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	userWithProfilePic, err := services.GetUserWithProfilePictureURL(user.ID, 60)
+	if err != nil {
+		userWithProfilePic = user
+	}
+
 	response.StatusCode = http.StatusOK
 	response.Success = true
 	response.Data = gin.H{
-		"user": user,
+		"user": userWithProfilePic,
 		"token": gin.H{
 			"access":  accessToken.GetResponseJson(),
 			"refresh": refreshToken.GetResponseJson()},
@@ -167,10 +176,18 @@ func Refresh(c *gin.Context) {
 	}
 
 	accessToken, refreshToken, err := services.GenerateAccessTokens(user)
+	
+	// Get user with profile picture URL for response
+	userWithProfilePic, err := services.GetUserWithProfilePictureURL(user.ID, 60)
+	if err != nil {
+		// If profile pic URL generation fails, still return user without it
+		userWithProfilePic = user
+	}
+
 	response.StatusCode = http.StatusOK
 	response.Success = true
 	response.Data = gin.H{
-		"user": user,
+		"user": userWithProfilePic,
 		"token": gin.H{
 			"access":  accessToken.GetResponseJson(),
 			"refresh": refreshToken.GetResponseJson()},
@@ -244,19 +261,19 @@ func GoogleSignIn(c *gin.Context) {
 			return
 		}
 	} else {
-		// User exists, update their profile picture if it's different
-		err = services.UpdateUserProfilePicture(user.ID, picture)
-		if err != nil {
-			response.Message = "Failed to update profile picture"
-			response.SendResponse(c)
-			return
-		}
-		// Refresh user data to get the updated profile picture
-		user, err = services.FindUserById(user.ID)
-		if err != nil {
-			response.Message = "Failed to retrieve updated user"
-			response.SendResponse(c)
-			return
+		if user.ProfilePicType != "s3" && user.ProfilePicUrl != picture {
+			err = services.UpdateUserProfilePictureExternalURL(user.ID, picture)
+			if err != nil {
+				response.Message = "Failed to update profile picture"
+				response.SendResponse(c)
+				return
+			}
+			user, err = services.FindUserById(user.ID)
+			if err != nil {
+				response.Message = "Failed to retrieve updated user"
+				response.SendResponse(c)
+				return
+			}
 		}
 	}
 
@@ -267,10 +284,15 @@ func GoogleSignIn(c *gin.Context) {
 		return
 	}
 
+	userWithProfilePic, err := services.GetUserWithProfilePictureURL(user.ID, 60)
+	if err != nil {
+		userWithProfilePic = user
+	}
+
 	response.StatusCode = http.StatusOK
 	response.Success = true
 	response.Data = gin.H{
-		"user": user,
+		"user": userWithProfilePic,
 		"token": gin.H{
 			"access":  accessToken.GetResponseJson(),
 			"refresh": refreshToken.GetResponseJson(),

@@ -17,8 +17,9 @@ type User struct {
 	Role             string `json:"role" bson:"role"`
 	MailVerified     bool   `json:"mail_verified" bson:"mail_verified"`
 	FCMToken         string `json:"fcm_token" bson:"fcm_token"`
-	ProfilePicS3Key  string `json:"-" bson:"profile_pic_s3_key"` // Store S3 key privately
-	ProfilePicUrl    string `json:"profile_pic_url,omitempty" bson:"-"` // Computed field for download URL
+	ProfilePicS3Key  string `json:"-" bson:"profile_pic_s3_key"` // Store S3 key privately for uploaded images
+	ProfilePicUrl    string `json:"profile_pic_url,omitempty" bson:"profile_pic_url,omitempty"` // Store external URLs (Google, etc.) or computed S3 URLs
+	ProfilePicType   string `json:"-" bson:"profile_pic_type"` // "s3", "external", or empty
 }
 
 type UserClaims struct {
@@ -40,11 +41,12 @@ func NewUser(email string, password string, name string, role string) *User {
 
 func NewGoogleUser(email string, name string, profilePicUrl string) *User {
 	return &User{
-		Email:         email,
-		Name:          name,
-		ProfilePicUrl: profilePicUrl,
-		Role:          RoleUser,
-		MailVerified:  true,
+		Email:           email,
+		Name:            name,
+		ProfilePicUrl:   profilePicUrl,
+		ProfilePicType:  "external", // Mark as external URL (Google)
+		Role:            RoleUser,
+		MailVerified:    true,
 	}
 }
 

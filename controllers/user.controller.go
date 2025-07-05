@@ -85,7 +85,12 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
+	userWithProfilePic, err := services.GetUserWithProfilePictureURL(updatedUser.ID, 60)
+	if err != nil {
+		userWithProfilePic = updatedUser
+	}
+
 	models.SendSuccessResponse(c, "Profile updated successfully", map[string]any{
-		"user": updatedUser,
+		"user": userWithProfilePic,
 	})
 }

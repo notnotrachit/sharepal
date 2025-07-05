@@ -130,11 +130,32 @@ func UpdateUserProfilePictureS3Key(userId primitive.ObjectID, s3Key string) erro
 		return err
 	}
 
-	// Update S3 key
+	// Update S3 key and clear external URL
 	user.ProfilePicS3Key = s3Key
+	user.ProfilePicUrl = "" // Clear any external URL
+	user.ProfilePicType = "s3" // Mark as S3-hosted
 	err = mgm.Coll(user).Update(user)
 	if err != nil {
 		return errors.New("cannot update profile picture S3 key")
+	}
+
+	return nil
+}
+
+// UpdateUserProfilePictureExternalURL updates user's profile picture with external URL (Google, etc.)
+func UpdateUserProfilePictureExternalURL(userId primitive.ObjectID, externalUrl string) error {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	// Update external URL and clear S3 key
+	user.ProfilePicUrl = externalUrl
+	user.ProfilePicS3Key = "" // Clear any S3 key
+	user.ProfilePicType = "external" // Mark as external URL
+	err = mgm.Coll(user).Update(user)
+	if err != nil {
+		return errors.New("cannot update profile picture external URL")
 	}
 
 	return nil
@@ -147,15 +168,36 @@ func GetUserWithProfilePictureURL(userId primitive.ObjectID, urlExpirationMinute
 		return nil, err
 	}
 
-	// Generate download URL if S3 key exists
-	if user.ProfilePicS3Key != "" {
-		downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
-		if err != nil {
-			// Log error but don't fail the request
-			fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
-		} else {
-			user.ProfilePicUrl = downloadURL
+	// Handle profile picture based on type
+	switch user.ProfilePicType {
+	case "s3":
+		// Generate presigned download URL for S3-hosted images
+		if user.ProfilePicS3Key != "" {
+			downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
+			if err != nil {
+				// Log error but don't fail the request
+				fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
+				user.ProfilePicUrl = "" // Clear invalid URL
+			} else {
+				user.ProfilePicUrl = downloadURL
+			}
 		}
+	case "external":
+		// External URLs (Google, etc.) are used as-is, already stored in ProfilePicUrl
+		// No processing needed
+	default:
+		// Legacy support: if no type is set, check if we have S3 key or external URL
+		if user.ProfilePicS3Key != "" {
+			// Assume it's S3 and generate presigned URL
+			downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
+			if err != nil {
+				fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
+				user.ProfilePicUrl = ""
+			} else {
+				user.ProfilePicUrl = downloadURL
+			}
+		}
+		// If ProfilePicUrl is already set and no S3 key, assume it's external
 	}
 
 	return user, nil
