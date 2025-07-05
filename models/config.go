@@ -18,6 +18,11 @@ type EnvConfig struct {
 	Mode                       string `mapstructure:"MODE"`
 	FirebaseCredentialsJSON    string `mapstructure:"FIREBASE_CREDENTIALS_JSON"`
 	GoogleClientID             string `mapstructure:"GOOGLE_CLIENT_ID"`
+	AWSRegion                  string `mapstructure:"AWS_REGION"`
+	AWSS3Bucket                string `mapstructure:"AWS_S3_BUCKET"`
+	AWSAccessKeyID             string `mapstructure:"AWS_ACCESS_KEY_ID"`
+	AWSSecretAccessKey         string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
+	AWSS3Endpoint              string `mapstructure:"AWS_S3_ENDPOINT"`
 }
 
 func (config *EnvConfig) Validate() error {

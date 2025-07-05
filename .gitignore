@@ -23,4 +23,7 @@ logs/
 # Go workspace file
 go.work
 
+# Uploaded files
+uploads/
+
 sharepal-360bc-firebase-adminsdk-fbsvc-7d71b5a48d.json

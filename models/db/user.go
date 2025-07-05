@@ -17,7 +17,8 @@ type User struct {
 	Role             string `json:"role" bson:"role"`
 	MailVerified     bool   `json:"mail_verified" bson:"mail_verified"`
 	FCMToken         string `json:"fcm_token" bson:"fcm_token"`
-	ProfilePicUrl string `json:"profile_pic_url,omitempty" bson:"profile_pic_url,omitempty"`
+	ProfilePicS3Key  string `json:"-" bson:"profile_pic_s3_key"` // Store S3 key privately
+	ProfilePicUrl    string `json:"profile_pic_url,omitempty" bson:"-"` // Computed field for download URL
 }
 
 type UserClaims struct {

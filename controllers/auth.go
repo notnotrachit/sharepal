@@ -201,7 +201,7 @@ func GetMe(c *gin.Context) {
 		return
 	}
 
-	user, err := services.FindUserById(userId.(primitive.ObjectID))
+	user, err := services.GetUserWithProfilePictureURL(userId.(primitive.ObjectID), 60)
 	if err != nil {
 		response.Message = err.Error()
 		response.SendResponse(c)

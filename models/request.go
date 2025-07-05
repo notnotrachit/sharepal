@@ -213,6 +213,36 @@ func (r UpdateFCMTokenRequest) Validate() error {
 	)
 }
 
+type PresignedURLRequest struct {
+	FileName string `json:"file_name"`
+}
+
+func (r PresignedURLRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.FileName, validation.Required),
+	)
+}
+
+type ConfirmUploadRequest struct {
+	S3Key string `json:"s3_key"`
+}
+
+func (r ConfirmUploadRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.S3Key, validation.Required),
+	)
+}
+
+type UpdateProfileRequest struct {
+	Name string `json:"name"`
+}
+
+func (r UpdateProfileRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Name, validation.Required, validation.Length(3, 64)),
+	)
+}
+
 type GoogleSignInRequest struct {
 	IDToken string `json:"id_token"`
 }

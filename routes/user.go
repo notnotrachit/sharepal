@@ -16,5 +16,9 @@ func UserRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 			"/fcm-token",
 			controllers.UpdateFCMToken,
 		)
+		user.PUT(
+			"/profile",
+			controllers.UpdateProfile,
+		)
 	}
 }

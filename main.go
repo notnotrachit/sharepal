@@ -39,6 +39,12 @@ func main() {
 		services.CheckRedisConnection()
 	}
 
+	// Initialize S3 service
+	err := services.InitS3()
+	if err != nil {
+		log.Printf("Warning: Failed to initialize S3 service: %s", err.Error())
+	}
+
 	routes.InitGin()
 	router := routes.New()
 

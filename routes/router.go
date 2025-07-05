@@ -32,6 +32,9 @@ func New() *gin.Engine {
 		FriendshipRoute(v1, middlewares.JWTMiddleware())
 		// Using unified transaction-based system
 		TransactionRoutes(v1)
+		
+		// Media upload functionality
+		MediaRoute(v1, middlewares.JWTMiddleware())
 	}
 
 	docs.SwaggerInfo.BasePath = v1.BasePath() // adds /v1 to swagger base path

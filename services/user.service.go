@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+
 	db "github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models/db"
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -99,4 +101,62 @@ func UpdateUserProfilePicture(userId primitive.ObjectID, profilePicUrl string) e
 	}
 
 	return nil
+}
+
+// UpdateUserProfile updates user's name only (email is not editable)
+func UpdateUserProfile(userId primitive.ObjectID, name string) (*db.User, error) {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update name if provided
+	if name != "" {
+		user.Name = name
+	}
+
+	err = mgm.Coll(user).Update(user)
+	if err != nil {
+		return nil, errors.New("cannot update user profile")
+	}
+
+	return user, nil
+}
+
+// UpdateUserProfilePictureS3Key updates user's profile picture S3 key (for private bucket approach)
+func UpdateUserProfilePictureS3Key(userId primitive.ObjectID, s3Key string) error {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	// Update S3 key
+	user.ProfilePicS3Key = s3Key
+	err = mgm.Coll(user).Update(user)
+	if err != nil {
+		return errors.New("cannot update profile picture S3 key")
+	}
+
+	return nil
+}
+
+// GetUserWithProfilePictureURL returns user with computed profile picture download URL
+func GetUserWithProfilePictureURL(userId primitive.ObjectID, urlExpirationMinutes int) (*db.User, error) {
+	user, err := FindUserById(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate download URL if S3 key exists
+	if user.ProfilePicS3Key != "" {
+		downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
+		if err != nil {
+			// Log error but don't fail the request
+			fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
+		} else {
+			user.ProfilePicUrl = downloadURL
+		}
+	}
+
+	return user, nil
 }
