@@ -27,6 +27,10 @@ func LoadConfig() {
 		panic(err)
 	}
 
+	// Debug print for GOOGLE_CLIENT_ID
+	googleClientID := v.GetString("GOOGLE_CLIENT_ID")
+	println("[DEBUG] GOOGLE_CLIENT_ID from viper:", googleClientID)
+
 	if err := Config.Validate(); err != nil {
 		panic(err)
 	}
