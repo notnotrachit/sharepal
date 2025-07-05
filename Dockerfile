@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Change .env with docker
-COPY .env.docker ./.env
+# COPY .env.docker ./.env
 
 # Build the Go app
 RUN go build -o main .
