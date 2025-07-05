@@ -31,6 +31,14 @@ func LoadConfig() {
 	googleClientID := v.GetString("GOOGLE_CLIENT_ID")
 	println("[DEBUG] GOOGLE_CLIENT_ID from viper:", googleClientID)
 	println("[DEBUG] GOOGLE_CLIENT_ID in config struct:", Config.GoogleClientID)
+	// print the whole config
+	println("[DEBUG] Config struct:", Config)
+
+	// Fix: Manually set GoogleClientID if it's empty but viper has it
+	if Config.GoogleClientID == "" && googleClientID != "" {
+		println("[DEBUG] Manually setting GoogleClientID from viper")
+		Config.GoogleClientID = googleClientID
+	}
 
 	if err := Config.Validate(); err != nil {
 		panic(err)
