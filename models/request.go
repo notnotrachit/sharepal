@@ -80,6 +80,19 @@ func (r CreateGroupRequest) Validate() error {
 	)
 }
 
+type UpdateGroupRequest struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Currency    string `json:"currency,omitempty"`
+}
+
+func (r UpdateGroupRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Name, validation.Length(1, 100)),
+		validation.Field(&r.Currency, validation.Length(3, 3)),
+	)
+}
+
 type AddMemberToGroupRequest struct {
 	UserID string `json:"user_id"`
 }

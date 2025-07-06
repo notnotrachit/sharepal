@@ -342,3 +342,53 @@ func DeleteGroup(c *gin.Context) {
 	response.Message = "Group deleted successfully"
 	response.SendResponse(c)
 }
+
+// UpdateGroup godoc
+// @Summary      Update Group
+// @Description  updates group details (name, description, currency)
+// @Tags         groups
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Group ID"
+// @Param        req  body      models.UpdateGroupRequest true "Update Group Request"
+// @Success      200  {object}  models.Response
+// @Failure      400  {object}  models.Response
+// @Router       /groups/{id} [put]
+// @Security     ApiKeyAuth
+func UpdateGroup(c *gin.Context) {
+	var requestBody models.UpdateGroupRequest
+	_ = c.ShouldBindBodyWith(&requestBody, binding.JSON)
+
+	response := &models.Response{
+		StatusCode: http.StatusBadRequest,
+		Success:    false,
+	}
+
+	idHex := c.Param("id")
+	groupId, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		response.Message = "invalid group id"
+		response.SendResponse(c)
+		return
+	}
+
+	userId, exists := c.Get("userId")
+	if !exists {
+		response.Message = "cannot get user"
+		response.SendResponse(c)
+		return
+	}
+
+	updatedGroup, err := services.UpdateGroup(groupId, userId.(primitive.ObjectID), requestBody.Name, requestBody.Description, requestBody.Currency)
+	if err != nil {
+		response.Message = err.Error()
+		response.SendResponse(c)
+		return
+	}
+
+	response.StatusCode = http.StatusOK
+	response.Success = true
+	response.Data = gin.H{"group": updatedGroup}
+	response.Message = "Group updated successfully"
+	response.SendResponse(c)
+}

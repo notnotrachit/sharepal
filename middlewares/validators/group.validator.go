@@ -22,6 +22,20 @@ func CreateGroupValidator() gin.HandlerFunc {
 	}
 }
 
+func UpdateGroupValidator() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var updateGroupRequest models.UpdateGroupRequest
+		_ = c.ShouldBindBodyWith(&updateGroupRequest, binding.JSON)
+
+		if err := updateGroupRequest.Validate(); err != nil {
+			models.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func AddMemberToGroupValidator() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var addMemberRequest models.AddMemberToGroupRequest

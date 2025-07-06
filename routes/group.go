@@ -26,6 +26,13 @@ func GroupRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 			controllers.GetGroupById,
 		)
 
+		groups.PUT(
+			"/:id",
+			validators.PathIdValidator(),
+			validators.UpdateGroupValidator(),
+			controllers.UpdateGroup,
+		)
+
 		groups.DELETE(
 			"/:id",
 			validators.PathIdValidator(),

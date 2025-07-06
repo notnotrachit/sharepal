@@ -159,3 +159,39 @@ func GetGroupMembers(groupID, userID primitive.ObjectID) ([]*db.User, error) {
 
 	return users, err
 }
+
+func UpdateGroup(groupID, userID primitive.ObjectID, name, description, currency string) (*db.Group, error) {
+	group, err := GetGroupById(groupID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if group.CreatedBy != userID {
+		return nil, errors.New("only group creator can update group details")
+	}
+
+	updateDoc := bson.M{}
+	
+	if name != "" {
+		updateDoc["name"] = name
+	}
+	if description != "" {
+		updateDoc["description"] = description
+	}
+	if currency != "" {
+		updateDoc["currency"] = currency
+	}
+
+	if len(updateDoc) == 0 {
+		return group, nil
+	}
+
+	_, err = mgm.Coll(group).UpdateOne(mgm.Ctx(), bson.M{"_id": groupID}, bson.M{
+		"$set": updateDoc,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return GetGroupById(groupID, userID)
+}
