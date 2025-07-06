@@ -2,8 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
-
 	db "github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models/db"
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -176,7 +174,6 @@ func GetUserWithProfilePictureURL(userId primitive.ObjectID, urlExpirationMinute
 			downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
 			if err != nil {
 				// Log error but don't fail the request
-				fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
 				user.ProfilePicUrl = "" // Clear invalid URL
 			} else {
 				user.ProfilePicUrl = downloadURL
@@ -191,7 +188,6 @@ func GetUserWithProfilePictureURL(userId primitive.ObjectID, urlExpirationMinute
 			// Assume it's S3 and generate presigned URL
 			downloadURL, err := GeneratePresignedDownloadURL(user.ProfilePicS3Key, urlExpirationMinutes)
 			if err != nil {
-				fmt.Printf("Warning: Failed to generate download URL for user %s: %s\n", userId.Hex(), err.Error())
 				user.ProfilePicUrl = ""
 			} else {
 				user.ProfilePicUrl = downloadURL

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models"
@@ -28,9 +27,6 @@ func UpdateFCMToken(c *gin.Context) {
 		models.SendErrorResponse(c, http.StatusInternalServerError, "Invalid user ID in context")
 		return
 	}
-
-	fmt.Printf("Updating FCM token for user ID: %s\n", userObjID.Hex())
-	fmt.Printf("New FCM token: %s\n", request.FCMToken)
 
 	err := services.UpdateFCMToken(userObjID, request.FCMToken)
 	if err != nil {
