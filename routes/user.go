@@ -13,12 +13,34 @@ func UserRoute(router *gin.RouterGroup, handlers ...gin.HandlerFunc) {
 			controllers.GetMe,
 		)
 		user.PUT(
-			"/fcm-token",
-			controllers.UpdateFCMToken,
-		)
-		user.PUT(
 			"/profile",
 			controllers.UpdateProfile,
+		)
+
+		// Push notification subscription endpoints
+		user.POST(
+			"/push-subscription",
+			controllers.RegisterPushSubscription,
+		)
+		user.PUT(
+			"/push-subscription/:id",
+			controllers.UpdatePushSubscription,
+		)
+		user.GET(
+			"/push-subscriptions",
+			controllers.GetPushSubscriptions,
+		)
+		user.DELETE(
+			"/push-subscription/:id",
+			controllers.DeregisterPushSubscription,
+		)
+		user.DELETE(
+			"/push-subscriptions",
+			controllers.DeregisterAllPushSubscriptions,
+		)
+		user.POST(
+			"/push-subscription/:id/test",
+			controllers.TestPushNotification,
 		)
 	}
 }

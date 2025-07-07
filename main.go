@@ -33,7 +33,7 @@ import (
 func main() {
 	services.LoadConfig()
 	services.InitMongoDB()
-	services.InitFCM()
+	services.InitWebPush()
 
 	if services.Config.UseRedis {
 		services.CheckRedisConnection()

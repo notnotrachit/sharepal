@@ -216,15 +216,6 @@ func (r CompleteTransactionRequest) Validate() error {
 	return validation.ValidateStruct(&r)
 }
 
-type UpdateFCMTokenRequest struct {
-	FCMToken string `json:"fcm_token"`
-}
-
-func (r UpdateFCMTokenRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.FCMToken, validation.Required),
-	)
-}
 
 type PresignedURLRequest struct {
 	FileName string `json:"file_name"`
@@ -263,5 +254,21 @@ type GoogleSignInRequest struct {
 func (a GoogleSignInRequest) Validate() error {
 	return validation.ValidateStruct(&a,
 		validation.Field(&a.IDToken, validation.Required),
+	)
+}
+
+type PushSubscriptionRequest struct {
+	Endpoint string `json:"endpoint"`
+	Keys     struct {
+		P256dh string `json:"p256dh"`
+		Auth   string `json:"auth"`
+	} `json:"keys"`
+}
+
+func (r PushSubscriptionRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Endpoint, validation.Required, is.URL),
+		validation.Field(&r.Keys.P256dh, validation.Required),
+		validation.Field(&r.Keys.Auth, validation.Required),
 	)
 }

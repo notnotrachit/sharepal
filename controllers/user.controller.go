@@ -9,33 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func UpdateFCMToken(c *gin.Context) {
-	var request models.UpdateFCMTokenRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		models.SendErrorResponse(c, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-
-	userId, exists := c.Get("userId")
-	if !exists {
-		models.SendErrorResponse(c, http.StatusUnauthorized, "User ID not found in context")
-		return
-	}
-
-	userObjID, ok := userId.(primitive.ObjectID)
-	if !ok {
-		models.SendErrorResponse(c, http.StatusInternalServerError, "Invalid user ID in context")
-		return
-	}
-
-	err := services.UpdateFCMToken(userObjID, request.FCMToken)
-	if err != nil {
-		models.SendErrorResponse(c, http.StatusInternalServerError, "Failed to update FCM token")
-		return
-	}
-
-	models.SendSuccessResponse(c, "FCM token updated successfully", nil)
-}
 
 // UpdateProfile godoc
 // @Summary      Update User Profile

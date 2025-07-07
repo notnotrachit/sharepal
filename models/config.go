@@ -16,7 +16,8 @@ type EnvConfig struct {
 	JWTAccessExpirationMinutes int    `mapstructure:"JWT_ACCESS_EXPIRATION_MINUTES"`
 	JWTRefreshExpirationDays   int    `mapstructure:"JWT_REFRESH_EXPIRATION_DAYS"`
 	Mode                       string `mapstructure:"MODE"`
-	FirebaseCredentialsJSON    string `mapstructure:"FIREBASE_CREDENTIALS_JSON"`
+	VapidPublicKey             string `mapstructure:"VAPID_PUBLIC_KEY"`
+	VapidPrivateKey            string `mapstructure:"VAPID_PRIVATE_KEY"`
 	GoogleClientID             string `mapstructure:"GOOGLE_CLIENT_ID"`
 	AWSRegion                  string `mapstructure:"AWS_REGION"`
 	AWSS3Bucket                string `mapstructure:"AWS_S3_BUCKET"`
@@ -41,7 +42,8 @@ func (config *EnvConfig) Validate() error {
 		validation.Field(&config.JWTRefreshExpirationDays, validation.Required),
 
 		validation.Field(&config.Mode, validation.In("debug", "release")),
-		validation.Field(&config.FirebaseCredentialsJSON, validation.Required),
+		validation.Field(&config.VapidPublicKey, validation.Required),
+		validation.Field(&config.VapidPrivateKey, validation.Required),
 		validation.Field(&config.GoogleClientID, validation.Required),
 	)
 }

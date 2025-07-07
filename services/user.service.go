@@ -68,19 +68,13 @@ func CheckUserMail(email string) error {
 	return nil
 }
 
-func UpdateFCMToken(userId primitive.ObjectID, fcmToken string) error {
-	user, err := FindUserById(userId)
+func GetPushSubscriptionsByUserID(userID primitive.ObjectID) ([]*db.PushSubscription, error) {
+	var subscriptions []*db.PushSubscription
+	err := mgm.Coll(&db.PushSubscription{}).SimpleFind(&subscriptions, bson.M{"user_id": userID})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	user.FCMToken = fcmToken
-	err = mgm.Coll(user).Update(user)
-	if err != nil {
-		return errors.New("cannot update fcm token")
-	}
-
-	return nil
+	return subscriptions, nil
 }
 
 func UpdateUserProfilePicture(userId primitive.ObjectID, profilePicUrl string) error {

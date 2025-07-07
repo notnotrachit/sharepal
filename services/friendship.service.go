@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/ebubekiryigit/golang-mongodb-rest-api-starter/models"
@@ -65,11 +66,26 @@ func SendFriendRequest(requesterID primitive.ObjectID, email string) error {
 		return nil
 	}
 
-	if addressee.FCMToken != "" {
-		go func() {
-			_ = Notification.SendNotification(addressee.FCMToken, "New Friend Request", requester.Name+" has sent you a friend request.")
-		}()
-	}
+	go func() {
+		subs, err := GetPushSubscriptionsByUserID(addressee.ID)
+		if err != nil {
+			log.Printf("Error getting push subscriptions for addressee %s: %v\n", addressee.Email, err)
+			return
+		}
+
+		if len(subs) > 0 {
+			notificationData := map[string]string{
+				"title": "New Friend Request",
+				"body":  requester.Name + " has sent you a friend request.",
+			}
+			for _, sub := range subs {
+				err := Notification.SendJSONNotification(sub, notificationData)
+				if err != nil {
+					log.Printf("Error sending friend request notification to %s: %v\n", addressee.Email, err)
+				}
+			}
+		}
+	}()
 
 	return nil
 }

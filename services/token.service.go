@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CreateToken create a new token record
@@ -93,4 +95,12 @@ func VerifyToken(token string, tokenType string) (*db.Token, error) {
 	}
 
 	return tokenModel, nil
+}
+
+func ExtractUserID(c *gin.Context) (primitive.ObjectID, error) {
+	userId, exists := c.Get("userId")
+	if !exists {
+		return primitive.NilObjectID, errors.New("user ID not found in context")
+	}
+	return userId.(primitive.ObjectID), nil
 }

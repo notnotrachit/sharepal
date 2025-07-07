@@ -245,11 +245,25 @@ func (ts *TransactionService) executeTransactionWithBalanceUpdate(transaction *d
 		// Send notifications to all participants
 		for _, participant := range transaction.Participants {
 			user, err := FindUserById(participant.UserID)
-			if err == nil && user.FCMToken != "" {
+			if err == nil {
 				go func(user *db.User) {
-					err := Notification.SendNotification(user.FCMToken, "New Transaction", "A new transaction has been added to "+group.Name)
+					subs, err := GetPushSubscriptionsByUserID(user.ID)
 					if err != nil {
-						log.Printf("Error sending transaction notification to %s: %v\n", user.Email, err)
+						log.Printf("Error getting push subscriptions for user %s: %v\n", user.Email, err)
+						return
+					}
+
+					if len(subs) > 0 {
+						notificationData := map[string]string{
+							"title": "New Transaction",
+							"body":  "A new transaction has been added to " + group.Name,
+						}
+						for _, sub := range subs {
+							err := Notification.SendJSONNotification(sub, notificationData)
+							if err != nil {
+								log.Printf("Error sending transaction notification to %s: %v\n", user.Email, err)
+							}
+						}
 					}
 				}(user)
 			}
