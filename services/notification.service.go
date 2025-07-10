@@ -32,6 +32,16 @@ func InitWebPush() {
 }
 
 func (s *NotificationService) SendNotification(subscription *db.PushSubscription, message []byte) error {
+	var msgMap map[string]interface{}
+	if err := json.Unmarshal(message, &msgMap); err != nil {
+		return err
+	}
+	msgMap["id"] = time.Now().UnixNano()
+	updatedMsg, err := json.Marshal(msgMap)
+	if err != nil {
+		return err
+	}
+
 	sub := &webpush.Subscription{
 		Endpoint: subscription.Endpoint,
 		Keys: webpush.Keys{
@@ -40,7 +50,7 @@ func (s *NotificationService) SendNotification(subscription *db.PushSubscription
 		},
 	}
 
-	resp, err := webpush.SendNotification(message, sub, &webpush.Options{
+	resp, err := webpush.SendNotification(updatedMsg, sub, &webpush.Options{
 		VAPIDPublicKey:  s.VapidPublicKey,
 		VAPIDPrivateKey: s.VapidPrivateKey,
 		TTL:             60,
@@ -63,13 +73,11 @@ func (s *NotificationService) SendNotification(subscription *db.PushSubscription
 // UpdatePushSubscription updates an existing push subscription
 func UpdatePushSubscription(userID primitive.ObjectID, subscriptionID, endpoint, p256dh, auth string) error {
 	subscription := &db.PushSubscription{}
-	
 	// Find subscription by ID and user ID
 	objID, err := primitive.ObjectIDFromHex(subscriptionID)
 	if err != nil {
 		return errors.New("invalid subscription ID")
 	}
-	
 	err = mgm.Coll(subscription).First(bson.M{
 		"_id":     objID,
 		"user_id": userID,
@@ -77,23 +85,19 @@ func UpdatePushSubscription(userID primitive.ObjectID, subscriptionID, endpoint,
 	if err != nil {
 		return errors.New("subscription not found")
 	}
-	
 	// Update subscription fields
 	subscription.Endpoint = endpoint
 	subscription.P256dh = p256dh
 	subscription.Auth = auth
-	
 	return mgm.Coll(subscription).Update(subscription)
 }
 
 // GetUserPushSubscriptions retrieves all push subscriptions for a user
 func GetUserPushSubscriptions(userID primitive.ObjectID) ([]*db.PushSubscription, error) {
 	var subscriptions []*db.PushSubscription
-	
 	err := mgm.Coll(&db.PushSubscription{}).SimpleFind(&subscriptions, bson.M{
 		"user_id": userID,
 	})
-	
 	return subscriptions, err
 }
 
@@ -103,7 +107,6 @@ func DeregisterPushSubscription(userID primitive.ObjectID, subscriptionID string
 	if err != nil {
 		return errors.New("invalid subscription ID")
 	}
-	
 	subscription := &db.PushSubscription{}
 	err = mgm.Coll(subscription).First(bson.M{
 		"_id":     objID,
@@ -112,7 +115,6 @@ func DeregisterPushSubscription(userID primitive.ObjectID, subscriptionID string
 	if err != nil {
 		return errors.New("subscription not found")
 	}
-	
 	return mgm.Coll(subscription).Delete(subscription)
 }
 
@@ -124,7 +126,7 @@ func DeregisterAllPushSubscriptions(userID primitive.ObjectID) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return int(result.DeletedCount), nil
 }
 
@@ -134,7 +136,6 @@ func SendTestPushNotification(userID primitive.ObjectID, subscriptionID string) 
 	if err != nil {
 		return errors.New("invalid subscription ID")
 	}
-	
 	subscription := &db.PushSubscription{}
 	err = mgm.Coll(subscription).First(bson.M{
 		"_id":     objID,
@@ -143,7 +144,7 @@ func SendTestPushNotification(userID primitive.ObjectID, subscriptionID string) 
 	if err != nil {
 		return errors.New("subscription not found")
 	}
-	
+
 	// Create test notification
 	notification := map[string]interface{}{
 		"title": "Test Notification",
@@ -153,11 +154,11 @@ func SendTestPushNotification(userID primitive.ObjectID, subscriptionID string) 
 			"timestamp": time.Now().Unix(),
 		},
 	}
-	
+
 	if Notification == nil {
 		return errors.New("notification service not initialized")
 	}
-	
+
 	return Notification.SendJSONNotification(subscription, notification)
 }
 
