@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"time"
@@ -241,33 +242,9 @@ func (ts *TransactionService) executeTransactionWithBalanceUpdate(transaction *d
 		return nil
 	})
 
+	// Send notifications in background after successful transaction
 	if err == nil {
-		// Send notifications to all participants
-		for _, participant := range transaction.Participants {
-			user, err := FindUserById(participant.UserID)
-			if err == nil {
-				go func(user *db.User) {
-					subs, err := GetPushSubscriptionsByUserID(user.ID)
-					if err != nil {
-						log.Printf("Error getting push subscriptions for user %s: %v\n", user.Email, err)
-						return
-					}
-
-					if len(subs) > 0 {
-						notificationData := map[string]string{
-							"title": "New Transaction",
-							"body":  "A new transaction has been added to " + group.Name,
-						}
-						for _, sub := range subs {
-							err := Notification.SendJSONNotification(sub, notificationData)
-							if err != nil {
-								log.Printf("Error sending transaction notification to %s: %v\n", user.Email, err)
-							}
-						}
-					}
-				}(user)
-			}
-		}
+		go ts.sendTransactionNotifications(transaction, group)
 	}
 
 	return result, err
@@ -998,4 +975,85 @@ func (ts *TransactionService) GetUserAnalytics(userID primitive.ObjectID) (inter
 	analytics["total_settlements"] = settlementCount
 
 	return analytics, nil
+}
+
+// sendTransactionNotifications sends notifications to all transaction participants in background
+func (ts *TransactionService) sendTransactionNotifications(transaction *db.Transaction, group *db.Group) {
+	for _, participant := range transaction.Participants {
+		// Skip sending notification to the transaction creator
+		// if participant.UserID == transaction.CreatedBy {
+		// 	continue
+		// }
+
+		user, err := FindUserById(participant.UserID)
+		if err != nil {
+			log.Printf("Error finding user %s for notification: %v\n", participant.UserID.Hex(), err)
+			continue
+		}
+
+		// // Send FCM notification if user has FCM token
+		// if user.FCMToken != "" {
+		// 	var title, body string
+		// 	notificationData := map[string]string{
+		// 		"type":           "transaction",
+		// 		"transaction_id": transaction.ID.Hex(),
+		// 		"group_id":       group.ID.Hex(),
+		// 	}
+
+		// 	switch transaction.Type {
+		// 	case db.TransactionTypeExpense:
+		// 		title = "New Expense Added"
+		// 		body = fmt.Sprintf("A new expense '%s' was added to %s", transaction.Description, group.Name)
+		// 		notificationData["expense_amount"] = fmt.Sprintf("%.2f", transaction.Amount)
+		// 	case db.TransactionTypeSettlement:
+		// 		title = "New Settlement"
+		// 		body = fmt.Sprintf("A settlement was recorded in %s", group.Name)
+		// 		notificationData["settlement_amount"] = fmt.Sprintf("%.2f", transaction.Amount)
+		// 	}
+
+		// 	err := SendFCMNotification(user.FCMToken, title, body, notificationData)
+		// 	if err != nil {
+		// 		log.Printf("Error sending FCM notification to %s: %v\n", user.Email, err)
+		// 	}
+		// }
+
+		// Send web push notification if user has subscriptions
+		subs, err := GetPushSubscriptionsByUserID(user.ID)
+		if err != nil {
+			log.Printf("Error getting push subscriptions for user %s: %v\n", user.Email, err)
+			continue
+		}
+
+		if len(subs) > 0 {
+			var title, body string
+			switch transaction.Type {
+			case db.TransactionTypeExpense:
+				title = "New Expense Added"
+				body = fmt.Sprintf("A new expense '%s' was added to %s", transaction.Description, group.Name)
+			case db.TransactionTypeSettlement:
+				title = "New Settlement"
+				body = fmt.Sprintf("A settlement was recorded in %s", group.Name)
+			}
+
+			notificationData := map[string]interface{}{
+				"title": title,
+				"body":  body,
+				"data": map[string]interface{}{
+					"type":           "transaction",
+					"transaction_id": transaction.ID.Hex(),
+					"group_id":       group.ID.Hex(),
+					"amount":         transaction.Amount,
+					"currency":       transaction.Currency,
+				},
+			}
+
+			for _, sub := range subs {
+				err := Notification.SendJSONNotification(sub, notificationData)
+				if err != nil {
+					log.Printf("Error sending web push notification to %s: %v\n", user.Email, err)
+				}
+				log.Default().Printf("Sent web push notification to %s for transaction %s\n", user.Email, transaction.ID.Hex())
+			}
+		}
+	}
 }
