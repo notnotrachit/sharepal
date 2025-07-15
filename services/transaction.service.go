@@ -464,6 +464,38 @@ func (ts *TransactionService) GetGroupTransactions(groupID, userID primitive.Obj
 		SetSort(bson.D{{Key: "date", Value: -1}})
 
 	err = mgm.Coll(&db.Transaction{}).SimpleFind(&transactions, filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, transaction := range transactions {
+		creator, err := GetUserWithProfilePictureURL(transaction.CreatedBy, 60)
+		if err == nil {
+			transaction.CreatorProfilePicUrl = creator.ProfilePicUrl
+		}
+
+		for i, participant := range transaction.Participants {
+			user, err := GetUserWithProfilePictureURL(participant.UserID, 60)
+			if err == nil {
+				transaction.Participants[i].ProfilePicUrl = user.ProfilePicUrl
+			}
+		}
+
+		for i, payer := range transaction.Payers {
+			user, err := GetUserWithProfilePictureURL(payer.UserID, 60)
+			if err == nil {
+				transaction.Payers[i].ProfilePicUrl = user.ProfilePicUrl
+			}
+		}
+
+		for i, split := range transaction.Splits {
+			user, err := GetUserWithProfilePictureURL(split.UserID, 60)
+			if err == nil {
+				transaction.Splits[i].ProfilePicUrl = user.ProfilePicUrl
+			}
+		}
+	}
+
 	return transactions, err
 }
 
@@ -483,6 +515,32 @@ func (ts *TransactionService) GetTransactionById(transactionID, userID primitive
 	_, err = GetGroupById(transaction.GroupID, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	creator, err := GetUserWithProfilePictureURL(transaction.CreatedBy, 60)
+	if err == nil {
+		transaction.CreatorProfilePicUrl = creator.ProfilePicUrl
+	}
+
+	for i, participant := range transaction.Participants {
+		user, err := GetUserWithProfilePictureURL(participant.UserID, 60)
+		if err == nil {
+			transaction.Participants[i].ProfilePicUrl = user.ProfilePicUrl
+		}
+	}
+
+	for i, payer := range transaction.Payers {
+		user, err := GetUserWithProfilePictureURL(payer.UserID, 60)
+		if err == nil {
+			transaction.Payers[i].ProfilePicUrl = user.ProfilePicUrl
+		}
+	}
+
+	for i, split := range transaction.Splits {
+		user, err := GetUserWithProfilePictureURL(split.UserID, 60)
+		if err == nil {
+			transaction.Splits[i].ProfilePicUrl = user.ProfilePicUrl
+		}
 	}
 
 	return transaction, nil

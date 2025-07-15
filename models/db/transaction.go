@@ -28,24 +28,27 @@ const (
 
 // TransactionPayer represents who actually paid money
 type TransactionPayer struct {
-	UserID   primitive.ObjectID `json:"user_id" bson:"user_id"`
-	UserName string             `json:"user_name" bson:"user_name"`
-	Amount   float64            `json:"amount" bson:"amount"` // Amount they paid
+	UserID        primitive.ObjectID `json:"user_id" bson:"user_id"`
+	UserName      string             `json:"user_name" bson:"user_name"`
+	Amount        float64            `json:"amount" bson:"amount"` // Amount they paid
+	ProfilePicUrl string             `json:"profile_pic_url,omitempty" bson:"-"` // Computed field
 }
 
 // TransactionSplit represents how the expense should be divided
 type TransactionSplit struct {
-	UserID   primitive.ObjectID `json:"user_id" bson:"user_id"`
-	UserName string             `json:"user_name" bson:"user_name"`
-	Amount   float64            `json:"amount" bson:"amount"` // Amount they owe
+	UserID        primitive.ObjectID `json:"user_id" bson:"user_id"`
+	UserName      string             `json:"user_name" bson:"user_name"`
+	Amount        float64            `json:"amount" bson:"amount"` // Amount they owe
+	ProfilePicUrl string             `json:"profile_pic_url,omitempty" bson:"-"` // Computed field
 }
 
 // TransactionParticipant represents a user's net involvement (for backward compatibility)
 type TransactionParticipant struct {
-	UserID    primitive.ObjectID `json:"user_id" bson:"user_id"`
-	UserName  string             `json:"user_name" bson:"user_name"`
-	Amount    float64            `json:"amount" bson:"amount"`         // Net amount (paid - owed)
-	ShareType string             `json:"share_type" bson:"share_type"` // "payer", "split", "both"
+	UserID        primitive.ObjectID `json:"user_id" bson:"user_id"`
+	UserName      string             `json:"user_name" bson:"user_name"`
+	Amount        float64            `json:"amount" bson:"amount"`         // Net amount (paid - owed)
+	ShareType     string             `json:"share_type" bson:"share_type"` // "payer", "split", "both"
+	ProfilePicUrl string             `json:"profile_pic_url,omitempty" bson:"-"` // Computed field
 }
 
 // Transaction replaces both Expense and Settlement models
@@ -78,9 +81,10 @@ type Transaction struct {
 	ProofOfPayment   string     `json:"proof_of_payment,omitempty" bson:"proof_of_payment,omitempty"`
 
 	// Common fields
-	Notes       string             `json:"notes" bson:"notes"`
-	IsCompleted bool               `json:"is_completed" bson:"is_completed"`
-	CreatedBy   primitive.ObjectID `json:"created_by" bson:"created_by"`
+	Notes                 string             `json:"notes" bson:"notes"`
+	IsCompleted           bool               `json:"is_completed" bson:"is_completed"`
+	CreatedBy             primitive.ObjectID `json:"created_by" bson:"created_by"`
+	CreatorProfilePicUrl  string             `json:"creator_profile_pic_url,omitempty" bson:"-"` // Computed field
 
 	// Audit trail
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
