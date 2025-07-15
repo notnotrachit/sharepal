@@ -468,30 +468,49 @@ func (ts *TransactionService) GetGroupTransactions(groupID, userID primitive.Obj
 		return nil, err
 	}
 
+	// Collect all unique user IDs first
+	userIDs := make(map[primitive.ObjectID]bool)
 	for _, transaction := range transactions {
-		creator, err := GetUserWithProfilePictureURL(transaction.CreatedBy, 60)
+		userIDs[transaction.CreatedBy] = true
+		for _, participant := range transaction.Participants {
+			userIDs[participant.UserID] = true
+		}
+		for _, payer := range transaction.Payers {
+			userIDs[payer.UserID] = true
+		}
+		for _, split := range transaction.Splits {
+			userIDs[split.UserID] = true
+		}
+	}
+
+	userProfilePics := make(map[primitive.ObjectID]string)
+	for userID := range userIDs {
+		user, err := GetUserWithProfilePictureURL(userID, 60)
 		if err == nil {
-			transaction.CreatorProfilePicUrl = creator.ProfilePicUrl
+			userProfilePics[userID] = user.ProfilePicUrl
+		}
+	}
+
+	for _, transaction := range transactions {
+		if profilePicUrl, exists := userProfilePics[transaction.CreatedBy]; exists {
+			transaction.CreatorProfilePicUrl = profilePicUrl
 		}
 
 		for i, participant := range transaction.Participants {
-			user, err := GetUserWithProfilePictureURL(participant.UserID, 60)
-			if err == nil {
-				transaction.Participants[i].ProfilePicUrl = user.ProfilePicUrl
+			if profilePicUrl, exists := userProfilePics[participant.UserID]; exists {
+				transaction.Participants[i].ProfilePicUrl = profilePicUrl
 			}
 		}
 
 		for i, payer := range transaction.Payers {
-			user, err := GetUserWithProfilePictureURL(payer.UserID, 60)
-			if err == nil {
-				transaction.Payers[i].ProfilePicUrl = user.ProfilePicUrl
+			if profilePicUrl, exists := userProfilePics[payer.UserID]; exists {
+				transaction.Payers[i].ProfilePicUrl = profilePicUrl
 			}
 		}
 
 		for i, split := range transaction.Splits {
-			user, err := GetUserWithProfilePictureURL(split.UserID, 60)
-			if err == nil {
-				transaction.Splits[i].ProfilePicUrl = user.ProfilePicUrl
+			if profilePicUrl, exists := userProfilePics[split.UserID]; exists {
+				transaction.Splits[i].ProfilePicUrl = profilePicUrl
 			}
 		}
 	}
@@ -517,29 +536,45 @@ func (ts *TransactionService) GetTransactionById(transactionID, userID primitive
 		return nil, err
 	}
 
-	creator, err := GetUserWithProfilePictureURL(transaction.CreatedBy, 60)
-	if err == nil {
-		transaction.CreatorProfilePicUrl = creator.ProfilePicUrl
+	userIDs := make(map[primitive.ObjectID]bool)
+	userIDs[transaction.CreatedBy] = true
+	for _, participant := range transaction.Participants {
+		userIDs[participant.UserID] = true
+	}
+	for _, payer := range transaction.Payers {
+		userIDs[payer.UserID] = true
+	}
+	for _, split := range transaction.Splits {
+		userIDs[split.UserID] = true
+	}
+
+	userProfilePics := make(map[primitive.ObjectID]string)
+	for userID := range userIDs {
+		user, err := GetUserWithProfilePictureURL(userID, 60)
+		if err == nil {
+			userProfilePics[userID] = user.ProfilePicUrl
+		}
+	}
+
+	if profilePicUrl, exists := userProfilePics[transaction.CreatedBy]; exists {
+		transaction.CreatorProfilePicUrl = profilePicUrl
 	}
 
 	for i, participant := range transaction.Participants {
-		user, err := GetUserWithProfilePictureURL(participant.UserID, 60)
-		if err == nil {
-			transaction.Participants[i].ProfilePicUrl = user.ProfilePicUrl
+		if profilePicUrl, exists := userProfilePics[participant.UserID]; exists {
+			transaction.Participants[i].ProfilePicUrl = profilePicUrl
 		}
 	}
 
 	for i, payer := range transaction.Payers {
-		user, err := GetUserWithProfilePictureURL(payer.UserID, 60)
-		if err == nil {
-			transaction.Payers[i].ProfilePicUrl = user.ProfilePicUrl
+		if profilePicUrl, exists := userProfilePics[payer.UserID]; exists {
+			transaction.Payers[i].ProfilePicUrl = profilePicUrl
 		}
 	}
 
 	for i, split := range transaction.Splits {
-		user, err := GetUserWithProfilePictureURL(split.UserID, 60)
-		if err == nil {
-			transaction.Splits[i].ProfilePicUrl = user.ProfilePicUrl
+		if profilePicUrl, exists := userProfilePics[split.UserID]; exists {
+			transaction.Splits[i].ProfilePicUrl = profilePicUrl
 		}
 	}
 
